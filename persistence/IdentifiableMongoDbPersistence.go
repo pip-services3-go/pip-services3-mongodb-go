@@ -2,21 +2,14 @@ package persistence
 
 import (
 	"context"
+	cconf "github.com/pip-services3-go/pip-services3-commons-go/v3/config"
+	cdata "github.com/pip-services3-go/pip-services3-commons-go/v3/data"
+	cmpersist "github.com/pip-services3-go/pip-services3-data-go/v3/persistence"
+	"go.mongodb.org/mongo-driver/bson"
+	mongoopt "go.mongodb.org/mongo-driver/mongo/options"
 	"math/rand"
 	"reflect"
 	"time"
-
-	cconf "github.com/pip-services3-go/pip-services3-commons-go/v3/config"
-
-	//cerror "github.com/pip-services3-go/pip-services3-commons-go/v3/erros"
-	//crefer "github.com/pip-services3-go/pip-services3-commons-go/v3/refr"
-	cdata "github.com/pip-services3-go/pip-services3-commons-go/v3/data"
-	cmpers "github.com/pip-services3-go/pip-services3-data-go/v3/persistence"
-
-	//clog "github.com/pip-services3-go/pip-services3-components-go/v3/lg"
-	"go.mongodb.org/mongo-driver/bson"
-	//mongodrv "go.mongodb.org/mongo-driver/mongo"
-	mongoopt "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 /*
@@ -366,9 +359,9 @@ func (c *IdentifiableMongoDbPersistence) Create(correlationId string, item inter
 		return nil, nil
 	}
 	var newItem interface{}
-	newItem = cmpers.CloneObject(item)
+	newItem = cmpersist.CloneObject(item)
 	// Assign unique id if not exist
-	cmpers.GenerateObjectId(&newItem)
+	cmpersist.GenerateObjectId(&newItem)
 	insRes, insErr := c.Collection.InsertOne(context.TODO(), newItem)
 	if insErr != nil {
 		return nil, insErr
@@ -390,10 +383,10 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 		return nil, nil
 	}
 	var newItem interface{}
-	newItem = cmpers.CloneObject(item)
+	newItem = cmpersist.CloneObject(item)
 	// Assign unique id if not exist
-	cmpers.GenerateObjectId(&newItem)
-	id := cmpers.GetObjectId(newItem)
+	cmpersist.GenerateObjectId(&newItem)
+	id := cmpersist.GetObjectId(newItem)
 	filter := bson.M{"_id": id}
 	var options mongoopt.FindOneAndReplaceOptions
 	retDoc := mongoopt.After
@@ -430,8 +423,8 @@ func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item inter
 		return nil, nil
 	}
 	var newItem interface{}
-	newItem = cmpers.CloneObject(item)
-	id := cmpers.GetObjectId(newItem)
+	newItem = cmpersist.CloneObject(item)
+	id := cmpersist.GetObjectId(newItem)
 
 	filter := bson.M{"_id": id}
 	update := bson.D{{"$set", newItem}}
@@ -461,26 +454,27 @@ Updates only few selected fields in a data item.
 - id                an id of data item to be updated.
 - data              a map with fields to be updated.
 - callback          callback function that receives updated item or error.
- */
+*/
 func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, id interface{}, data cdata.AnyValueMap) (item interface{}, err error) {
 
-    if data == nil || id == nil {
-        return nil, nil
-    }
+	if id == nil { //data == nil ||
+		return nil, nil
+	}
 
-    newItem := data.GetAsObject()
+	//newItem := data.GetAsObject()
 
-    filter := bson.M {"_id": id}
-	update := bson.D {{"$set", newItem }}
+	filter := bson.M{"_id": id}
+	//update := bson.D{{"$set", newItem}}
+	update := bson.D{{"$set", data}}
 	var options mongoopt.FindOneAndUpdateOptions
 	retDoc := mongoopt.After
 	options.ReturnDocument = &retDoc
-	fuRes := c.Collection.FindOneAndUpdate(contwxt.TODO(), filter, update, &options)
-    if fuRes.Err() != nil {
-        return nil, fuRes.Err()
+	fuRes := c.Collection.FindOneAndUpdate(context.TODO(), filter, update, &options)
+	if fuRes.Err() != nil {
+		return nil, fuRes.Err()
 	}
-	c.Logger.Trace(correlationId, "Updated partially in %s with id = %s", c.Collection, id);
-    docPointer := reflect.New(c.Prototype)
+	c.Logger.Trace(correlationId, "Updated partially in %s with id = %s", c.Collection, id)
+	docPointer := reflect.New(c.Prototype)
 	err = fuRes.Decode(docPointer)
 	if err != nil {
 		return nil, err

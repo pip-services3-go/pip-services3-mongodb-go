@@ -143,25 +143,25 @@ func (c *MongoDbConnection) IsOpen() bool {
 
 func (c *MongoDbConnection) composeSettings() *mongoclopt.ClientOptions {
 	var maxPoolSize uint64
-	maxPoolSize = (uint64)(*c.Options.GetAsNullableInteger("max_pool_size"))
+	maxPoolSize = (uint64)(c.Options.GetAsInteger("max_pool_size"))
 	var MaxConnIdleTime time.Duration
-	keepAlive := c.Options.GetAsNullableInteger("keep_alive")
-	MaxConnIdleTime = (time.Duration)(*keepAlive)
+	keepAlive := c.Options.GetAsInteger("keep_alive")
+	MaxConnIdleTime = (time.Duration)(keepAlive)
 	var ConnectTimeout time.Duration
-	connectTimeoutMS := c.Options.GetAsNullableInteger("connect_timeout")
-	ConnectTimeout = (time.Duration)(*connectTimeoutMS)
+	connectTimeoutMS := c.Options.GetAsInteger("connect_timeout")
+	ConnectTimeout = (time.Duration)(connectTimeoutMS)
 	var SocketTimeout time.Duration
-	socketTimeoutMS := c.Options.GetAsNullableInteger("socket_timeout")
-	SocketTimeout = (time.Duration)(*socketTimeoutMS)
+	socketTimeoutMS := c.Options.GetAsInteger("socket_timeout")
+	SocketTimeout = (time.Duration)(socketTimeoutMS)
 	//autoReconnect := c.Options.GetAsNullableBoolean("auto_reconnect");
 	//reconnectInterval := c.Options.GetAsNullableInteger("reconnect_interval")
 	//debug := c.Options.GetAsNullableBoolean("debug");
 
 	//ssl := c.Options.GetAsNullableBoolean("ssl")
 	replicaSet := c.Options.GetAsNullableString("replica_set")
-	//authSource := c.Options.GetAsNullableString("auth_source")
-	authUser := c.Options.GetAsNullableString("auth_user")
-	authPassword := c.Options.GetAsNullableString("auth_password")
+	authSource := c.Options.GetAsString("auth_source")
+	authUser := c.Options.GetAsString("auth_user")
+	authPassword := c.Options.GetAsString("auth_password")
 
 	settings := mongoclopt.ClientOptions{}
 	settings.MaxPoolSize = &maxPoolSize
@@ -178,15 +178,13 @@ func (c *MongoDbConnection) composeSettings() *mongoclopt.ClientOptions {
 	if replicaSet != nil {
 		settings.ReplicaSet = replicaSet
 	}
-	// if authSource != nil {
-	// 	settings.AuthSource = authSource
-	// }
-	if authUser != nil {
-		settings.Auth.Username = *authUser
-	}
-	if authPassword != nil {
-		settings.Auth.Password = *authPassword
-	}
+
+	// Auth params
+	var authParams mongoclopt.Credential
+	authParams.AuthSource = authSource
+	authParams.Username = authUser
+	authParams.Password = authPassword
+	settings.SetAuth(authParams)
 
 	return &settings
 }
