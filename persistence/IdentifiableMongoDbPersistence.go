@@ -2,33 +2,22 @@ package persistence
 
 import (
 	"context"
-	cconf "github.com/pip-services3-go/pip-services3-commons-go/config"
+	"math/rand"
 	"reflect"
-	//cerror "github.com/pip-services3-go/pip-services3-commons-go/errors"
-	//crefer "github.com/pip-services3-go/pip-services3-commons-go/refer"
-	cdata "github.com/pip-services3-go/pip-services3-commons-go/data"
-	//clog "github.com/pip-services3-go/pip-services3-components-go/log"
+	"time"
+
+	cconf "github.com/pip-services3-go/pip-services3-commons-go/v3/config"
+
+	//cerror "github.com/pip-services3-go/pip-services3-commons-go/v3/erros"
+	//crefer "github.com/pip-services3-go/pip-services3-commons-go/v3/refr"
+	cdata "github.com/pip-services3-go/pip-services3-commons-go/v3/data"
+	cmpers "github.com/pip-services3-go/pip-services3-data-go/v3/persistence"
+
+	//clog "github.com/pip-services3-go/pip-services3-components-go/v3/lg"
 	"go.mongodb.org/mongo-driver/bson"
 	//mongodrv "go.mongodb.org/mongo-driver/mongo"
 	mongoopt "go.mongodb.org/mongo-driver/mongo/options"
 )
-
-//  _ = require("lodash");
-// /** @hidden */
-//  async = require("async");
-
-// import { ConfigParams } from "pip-services3-commons-node";
-// import { PagingParams } from "pip-services3-commons-node";
-// import { DataPage } from "pip-services3-commons-node";
-// import { AnyValueMap } from "pip-services3-commons-node";
-// import { IIdentifiable } from "pip-services3-commons-node";
-// import { IdGenerator } from "pip-services3-commons-node";
-
-// import { IWriter } from "pip-services3-data-node";
-// import { IGetter } from "pip-services3-data-node";
-// import { ISetter } from "pip-services3-data-node";
-
-// import { MongoDbPersistence } from "./MongoDbPersistence";
 
 /*
 Abstract persistence component that stores data in MongoDB
@@ -215,7 +204,11 @@ func (c *IdentifiableMongoDbPersistence) GetPageByFilter(correlationId string, f
 
 	for cursor.Next(context.TODO()) {
 		docPointer := reflect.New(c.Prototype)
-		item := cursor.Decode(docPointer)
+		curErr := cursor.Decode(docPointer)
+		if curErr != nil {
+			continue
+		}
+		item := docPointer.Interface()
 		items = append(items, item)
 	}
 
@@ -265,7 +258,11 @@ func (c *IdentifiableMongoDbPersistence) GetListByFilter(correlationId string, f
 
 	for cursor.Next(context.TODO()) {
 		docPointer := reflect.New(c.Prototype)
-		item := cursor.Decode(docPointer)
+		curErr := cursor.Decode(docPointer)
+		if curErr != nil {
+			continue
+		}
+		item := docPointer.Interface()
 		items = append(items, item)
 	}
 
@@ -307,234 +304,245 @@ func (c *IdentifiableMongoDbPersistence) GetOneById(correlationId string, id int
 	}
 
 	c.Logger.Trace(correlationId, "Retrieved from %s by id = %s", c.CollectionName, id)
-
+	item = docPointer.Interface()
 	//item = c.convertToPublic(item);
 	return item, nil
 
 }
 
-// /*
-// Gets a random item from items that match to a given filter.
+/*
+Gets a random item from items that match to a given filter.
 
-// This method shall be called by a func (c *IdentifiableMongoDbPersistence) getOneRandom method from child class that
-// receives FilterParams and converts them into a filter function.
+This method shall be called by a func (c *IdentifiableMongoDbPersistence) getOneRandom method from child class that
+receives FilterParams and converts them into a filter function.
 
-// - correlationId     (optional) transaction id to Trace execution through call chain.
-// - filter            (optional) a filter JSON object
-// - callback          callback function that receives a random item or error.
-//  */
-// func (c *IdentifiableMongoDbPersistence) GetOneRandom(correlationId string, filter interface{}) (item interface{}, err error){
-//     c.Collection.CountDocuments(filter, (err, count) => {
-//         if (err) {
-//             callback(err, nil);
-//             return;
-//         }
+- correlationId     (optional) transaction id to Trace execution through call chain.
+- filter            (optional) a filter JSON object
+- callback          callback function that receives a random item or error.
+*/
+func (c *IdentifiableMongoDbPersistence) GetOneRandom(correlationId string, filter interface{}) (item interface{}, err error) {
 
-//          pos = _.random(0, count - 1);
-//          options = {
-//             skip: pos >= 0 ? pos : 0,
-//             limit: 1,
-//         }
+	docCount, cntErr := c.Collection.CountDocuments(context.TODO(), filter)
 
-//         c.Collection.find(filter, options).toArray((err, items) => {
-//              item = (items != nil && items.length > 0) ? items[0] : nil;
+	if cntErr != nil {
+		return nil, cntErr
+	}
+	var options mongoopt.FindOptions
+	rand.Seed(time.Now().UnixNano())
+	var itemNum int64 = rand.Int63n(docCount)
+	var itemLim int64 = 1
 
-//             item = c.convertToPublic(item);
-//             callback(err, item);
-//         });
-//     });
-// }
+	if itemNum < 0 {
+		itemNum = 0
+	}
+	options.Skip = &itemNum
+	options.Limit = &itemLim
 
-// /*
-// Creates a data item.
+	cursor, fndErr := c.Collection.Find(context.TODO(), filter, &options)
 
-// - correlation_id    (optional) transaction id to Trace execution through call chain.
-// - item              an item to be created.
-// - callback          (optional) callback function that receives created item or error.
-//  */
-// func (c *IdentifiableMongoDbPersistence) Create(correlationId string, item interface{}) (item interface{}, err error) {
-//     if item == nil {
-//         //callback(nil, nil);
-//         return nil, nil
-//     }
+	if fndErr != nil {
+		return nil, fndErr
+	}
 
-//     // Assign unique id
-//     newItem interface{} = _.omit(item, "id");
-//     newItem._id = item.id || IdGenerator.nextLong();
-//     newItem = c.ConvertFromPublic(newItem);
+	docPointer := reflect.New(c.Prototype)
+	err = cursor.Decode(docPointer)
+	if err != nil {
+		return nil, err
+	}
+	item = docPointer.Interface()
+	return item, nil
 
-//     c.Collection.InsertOne(newItem, (err, result) => {
-//         if (!err)
-//             c.Logger.Trace(correlationId, "Created in %s with id = %s", c.Collection, newItem._id);
+}
 
-//         newItem = result && result.ops ? c.convertToPublic(result.ops[0]) : nil;
-//         callback(err, newItem);
-//     });
-// }
+/*
+Creates a data item.
 
-// /*
-// Sets a data item. If the data item exists it updates it,
-// otherwise it create a new data item.
+- correlation_id    (optional) transaction id to Trace execution through call chain.
+- item              an item to be created.
+- callback          (optional) callback function that receives created item or error.
+*/
+func (c *IdentifiableMongoDbPersistence) Create(correlationId string, item interface{}) (result interface{}, err error) {
+	if item == nil {
+		return nil, nil
+	}
+	var newItem interface{}
+	newItem = cmpers.CloneObject(item)
+	// Assign unique id if not exist
+	cmpers.GenerateObjectId(&newItem)
+	insRes, insErr := c.Collection.InsertOne(context.TODO(), newItem)
+	if insErr != nil {
+		return nil, insErr
+	}
+	c.Logger.Trace(correlationId, "Created in %s with id = %s", c.Collection, insRes.InsertedID)
+	return newItem, nil
+}
 
-// - correlation_id    (optional) transaction id to Trace execution through call chain.
-// - item              a item to be set.
-// - callback          (optional) callback function that receives updated item or error.
-//  */
-// func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interface{}) (item interface{}, err error){
-//     if (item == nil) {
-//         if (callback) callback(nil, nil);
-//         return;
-//     }
+/*
+Sets a data item. If the data item exists it updates it,
+otherwise it create a new data item.
 
-//     // Assign unique id
-//      newItem: interface{} = _.omit(item, "id");
-//     newItem._id = item.id || IdGenerator.nextLong();
-//     newItem = c.ConvertFromPublic(newItem);
+- correlation_id    (optional) transaction id to Trace execution through call chain.
+- item              a item to be set.
+- callback          (optional) callback function that receives updated item or error.
+*/
+func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interface{}) (result interface{}, err error) {
+	if item == nil {
+		return nil, nil
+	}
+	var newItem interface{}
+	newItem = cmpers.CloneObject(item)
+	// Assign unique id if not exist
+	cmpers.GenerateObjectId(&newItem)
+	id := cmpers.GetObjectId(newItem)
+	filter := bson.M{"_id": id}
+	var options mongoopt.FindOneAndReplaceOptions
+	retDoc := mongoopt.After
+	options.ReturnDocument = &retDoc
+	upsert := true
+	options.Upsert = &upsert
 
-//      filter = {
-//         _id: newItem._id
-//     };
+	frRes := c.Collection.FindOneAndReplace(context.TODO(), filter, newItem, &options)
 
-//      options = {
-//         returnOriginal: false,
-//         upsert: true
-//     };
+	if frRes.Err() != nil {
+		return nil, frRes.Err()
+	}
 
-//     c.Collection.findOneAndReplace(filter, newItem, options, (err, result) => {
-//         if (!err)
-//             c.Logger.Trace(correlationId, "Set in %s with id = %s", c.Collection, item.id);
+	c.Logger.Trace(correlationId, "Set in %s with id = %s", c.CollectionName, id)
 
-//         if (callback) {
-//             newItem = result ? c.convertToPublic(result.value) : nil;
-//             callback(err, newItem);
-//         }
-//     });
-// }
+	docPointer := reflect.New(c.Prototype)
+	err = frRes.Decode(docPointer)
+	if err != nil {
+		return nil, err
+	}
+	item = docPointer.Interface()
+	return item, nil
+}
 
-// /*
-// Updates a data item.
+/*
+Updates a data item.
 
-// - correlation_id    (optional) transaction id to Trace execution through call chain.
-// - item              an item to be updated.
-// - callback          (optional) callback function that receives updated item or error.
-//  */
-// func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item interface{})(item interface{}, err error){
-//     if item == nil || item.id == nil {
-//         if callback
-//         {
-//             callback(nil, nil);
-//         }
-//         return nil, nil
-//     }
+- correlation_id    (optional) transaction id to Trace execution through call chain.
+- item              an item to be updated.
+- callback          (optional) callback function that receives updated item or error.
+*/
+func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item interface{}) (result interface{}, err error) {
+	if item == nil { //|| item.id == nil
+		return nil, nil
+	}
+	var newItem interface{}
+	newItem = cmpers.CloneObject(item)
+	id := cmpers.GetObjectId(newItem)
 
-//      newItem = _.omit(item, "id");
-//     newItem = c.ConvertFromPublic(newItem);
+	filter := bson.M{"_id": id}
+	update := bson.D{{"$set", newItem}}
+	var options mongoopt.FindOneAndUpdateOptions
+	retDoc := mongoopt.After
+	options.ReturnDocument = &retDoc
 
-//      filter = { _id: item.id };
-//      update = { $set: newItem };
-//      options = {
-//         returnOriginal: false
-//     };
+	fuRes := c.Collection.FindOneAndUpdate(context.TODO(), filter, update, &options)
 
-//     c.Collection.FindOneAndUpdate(filter, update, options, (err, result) => {
-//         if (!err)
-//             c.Logger.Trace(correlationId, "Updated in %s with id = %s", c.Collection, item.id);
+	if fuRes.Err() != nil {
+		return nil, fuRes.Err()
+	}
+	c.Logger.Trace(correlationId, "Updated in %s with id = %s", c.CollectionName, id)
+	docPointer := reflect.New(c.Prototype)
+	err = fuRes.Decode(docPointer)
+	if err != nil {
+		return nil, err
+	}
+	item = docPointer.Interface()
+	return item, nil
+}
 
-//         if (callback) {
-//             newItem = result ? c.convertToPublic(result.value) : nil;
-//             callback(err, newItem);
-//         }
-//     });
-// }
+/*
+Updates only few selected fields in a data item.
 
-// /*
-// Updates only few selected fields in a data item.
+- correlation_id    (optional) transaction id to Trace execution through call chain.
+- id                an id of data item to be updated.
+- data              a map with fields to be updated.
+- callback          callback function that receives updated item or error.
+ */
+func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, id interface{}, data cdata.AnyValueMap) (item interface{}, err error) {
 
-// - correlation_id    (optional) transaction id to Trace execution through call chain.
-// - id                an id of data item to be updated.
-// - data              a map with fields to be updated.
-// - callback          callback function that receives updated item or error.
-//  */
-// func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, id interface{}, data AnyValueMap)
-//     (item interface{}, err error) {
+    if data == nil || id == nil {
+        return nil, nil
+    }
 
-//     if data == nil || id == nil {
-//         if callback {
-//             callback(nil, nil);
-//         }
-//         return nil, nil
-//     }
+    newItem := data.GetAsObject()
 
-//      newItem = data.getAsObject();
-//     newItem = c.ConvertFromPublicPartial(newItem);
+    filter := bson.M {"_id": id}
+	update := bson.D {{"$set", newItem }}
+	var options mongoopt.FindOneAndUpdateOptions
+	retDoc := mongoopt.After
+	options.ReturnDocument = &retDoc
+	fuRes := c.Collection.FindOneAndUpdate(contwxt.TODO(), filter, update, &options)
+    if fuRes.Err() != nil {
+        return nil, fuRes.Err()
+	}
+	c.Logger.Trace(correlationId, "Updated partially in %s with id = %s", c.Collection, id);
+    docPointer := reflect.New(c.Prototype)
+	err = fuRes.Decode(docPointer)
+	if err != nil {
+		return nil, err
+	}
+	item = docPointer.Interface()
+	return item, nil
+}
 
-//      filter = { _id: id };
-//      update = { $set: newItem };
-//      options = {
-//         returnOriginal: false
-//     };
+/*
+Deleted a data item by it"s unique id.
+- correlation_id    (optional) transaction id to Trace execution through call chain.
+- id                an id of the item to be deleted
+- callback          (optional) callback function that receives deleted item or error.
+*/
+func (c *IdentifiableMongoDbPersistence) DeleteById(correlationId string, id interface{}) (item interface{}, err error) {
+	filter := bson.M{"_id": id}
 
-//     c.Collection.FindOneAndUpdate(filter, update, options, (err, result) => {
-//         if !err {
-//             c.Logger.Trace(correlationId, "Updated partially in %s with id = %s", c.Collection, id);
-//         }
-//         if callback {
-//             newItem = result ? c.convertToPublic(result.value) : nil;
-//             callback(err, newItem);
-//         }
-//     });
-// }
+	fdRes := c.Collection.FindOneAndDelete(context.TODO(), filter)
 
-// /*
-// Deleted a data item by it"s unique id.
+	if fdRes.Err() != nil {
+		return nil, fdRes.Err()
+	}
+	c.Logger.Trace(correlationId, "Deleted from %s with id = %s", c.CollectionName, id)
+	docPointer := reflect.New(c.Prototype)
+	err = fdRes.Decode(docPointer)
+	if err != nil {
+		return nil, err
+	}
+	item = docPointer.Interface()
+	return item, nil
+}
 
-// - correlation_id    (optional) transaction id to Trace execution through call chain.
-// - id                an id of the item to be deleted
-// - callback          (optional) callback function that receives deleted item or error.
-//  */
-// func (c *IdentifiableMongoDbPersistence) DeleteById(correlationId string, id: K, callback?: (err: interface{}, item: T) => void): void {
-//      filter = { _id: id };
-//     c.Collection.FindOneAndDelete(filter, (err, result) => {
-//         if (!err)
-//             c.Logger.Trace(correlationId, "Deleted from %s with id = %s", c.Collection, id);
+/*
+Deletes data items that match to a given filter.
 
-//         if (callback) {
-//              oldItem = result ? c.convertToPublic(result.value) : nil;
-//             callback(err, oldItem);
-//         }
-//     });
-// }
+This method shall be called by a func (c *IdentifiableMongoDbPersistence) deleteByFilter method from child class that
+receives FilterParams and converts them into a filter function.
 
-// /*
-// Deletes data items that match to a given filter.
+- correlationId     (optional) transaction id to Trace execution through call chain.
+- filter            (optional) a filter JSON object.
+- callback          (optional) callback function that receives error or nil for success.
+*/
+func (c *IdentifiableMongoDbPersistence) DeleteByFilter(correlationId string, filter interface{}) error {
+	delRes, delErr := c.Collection.DeleteMany(context.TODO(), filter)
+	var count = delRes.DeletedCount
+	if delErr != nil {
+		return delErr
+	}
+	c.Logger.Trace(correlationId, "Deleted %d items from %s", count, c.Collection)
+	return nil
+}
 
-// This method shall be called by a func (c *IdentifiableMongoDbPersistence) deleteByFilter method from child class that
-// receives FilterParams and converts them into a filter function.
+/*
+Deletes multiple data items by their unique ids.
 
-// - correlationId     (optional) transaction id to Trace execution through call chain.
-// - filter            (optional) a filter JSON object.
-// - callback          (optional) callback function that receives error or nil for success.
-//  */
-// func (c *IdentifiableMongoDbPersistence) DeleteByFilter(correlationId string, filter interface{}) error {
-//     c.Collection.deleteMinterface{}(filter, (err, result) => {
-//          count = result ? result.deletedCount : 0;
-//         if (!err)
-//             c.Logger.Trace(correlationId, "Deleted %d items from %s", count, c.Collection);
-
-//         if (callback) callback(err);
-//     });
-// }
-
-// /*
-// Deletes multiple data items by their unique ids.
-
-// - correlationId     (optional) transaction id to Trace execution through call chain.
-// - ids               ids of data items to be deleted.
-// - callback          (optional) callback function that receives error or nil for success.
-//  */
-// func (c *IdentifiableMongoDbPersistence) DeleteByIds(correlationId string, ids []interface{}) error {
-//      filter = {
-//         _id: { $in: ids }
-//     }
-//     c.DeleteByFilter(correlationId, filter, callback);
-// }
+- correlationId     (optional) transaction id to Trace execution through call chain.
+- ids               ids of data items to be deleted.
+- callback          (optional) callback function that receives error or nil for success.
+*/
+func (c *IdentifiableMongoDbPersistence) DeleteByIds(correlationId string, ids []interface{}) error {
+	filter := bson.M{
+		"_id": bson.M{"$in": ids},
+	}
+	return c.DeleteByFilter(correlationId, filter)
+}
