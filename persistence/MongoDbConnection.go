@@ -11,6 +11,7 @@ import (
 	mcon "github.com/pip-services3-go/pip-services3-mongodb-go/v3/connect"
 	mongodrv "go.mongodb.org/mongo-driver/mongo"
 	mongoclopt "go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
 )
 
 /**
@@ -53,7 +54,7 @@ you can reduce number of used database connections.
 //export class MongoDbConnection implements IReferenceable, IConfigurable, IOpenable {
 type MongoDbConnection struct {
 	defaultConfig cconf.ConfigParams
-	Ctx           context.Context
+	//ctx           context.Context
 	/*
 	   The logger.
 	*/
@@ -111,7 +112,6 @@ func NewMongoDbConnection() (c *MongoDbConnection) {
 
 /*
    Configures component by passing configuration parameters.
-
    @param config    configuration parameters to be set.
 */
 func (c *MongoDbConnection) Configure(config *cconf.ConfigParams) {
@@ -124,7 +124,6 @@ func (c *MongoDbConnection) Configure(config *cconf.ConfigParams) {
 
 /*
  Sets references to dependent components.
-
  @param references 	references to locate the component dependencies.
 */
 func (c *MongoDbConnection) SetReferences(references crefer.IReferences) {
@@ -134,7 +133,6 @@ func (c *MongoDbConnection) SetReferences(references crefer.IReferences) {
 
 /*
  Checks if the component is opened.
-
  @returns true if the component has been opened and false otherwise.
 */
 func (c *MongoDbConnection) IsOpen() bool {
@@ -204,7 +202,6 @@ func (c *MongoDbConnection) Open(correlationId string) error {
 	}
 
 	c.Logger.Debug(correlationId, "Connecting to mongodb")
-
 	settings := c.composeSettings()
 
 	//settings.useNewUrlParser = true;
@@ -212,24 +209,26 @@ func (c *MongoDbConnection) Open(correlationId string) error {
 
 	client, err := mongodrv.NewClient(settings.ApplyURI(uri))
 	if err != nil {
-		err = cerror.NewConnectionError(correlationId, "CONNECT_FAILED", "Connection to mongodb failed").WithCause(err)
+		err = cerror.NewConnectionError(correlationId, "CONNECT_FAILED", "Create client for mongodb failed").WithCause(err)
 		return err
 	}
+	cs, _ := connstring.Parse(uri)
+	c.DatabaseName = cs.Database
 
-	c.Connection = client
-	// Todo: change timeout params, must get it from options
-	Ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	c.Ctx = Ctx
-	defer cancel()
-	err = client.Connect(Ctx)
+	// // Todo: change timeout params, must get it from options
+	// ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	// c.ctx = ctx
+	// defer cancel()
+	// err = client.Connect(ctx)
+	err = client.Connect(context.TODO())
 	if err != nil {
 		err = cerror.NewConnectionError(correlationId, "CONNECT_FAILED", "Connection to mongodb failed").WithCause(err)
 		return err
 	}
-	c.Db = client.Database("")
-	c.DatabaseName = client.Database("").Name()
+	c.Connection = client
+	c.Db = client.Database(c.DatabaseName)
+	//c.DatabaseName = c.Db.Name()
 	return nil
-
 }
 
 /*
@@ -243,7 +242,8 @@ func (c *MongoDbConnection) Close(correlationId string) error {
 		return nil
 	}
 
-	err := c.Connection.Disconnect(c.Ctx)
+	//err := c.Connection.Disconnect(c.ctx)
+	err := c.Connection.Disconnect(context.TODO())
 	c.Connection = nil
 	c.Db = nil
 	c.DatabaseName = ""

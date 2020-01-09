@@ -13,9 +13,9 @@ type DummyMongoDbPersistence struct {
 	mngpersist.IdentifiableMongoDbPersistence
 }
 
-func NewDummyMongoDbPersistence(collection string) *DummyMongoDbPersistence {
+func NewDummyMongoDbPersistence() *DummyMongoDbPersistence {
 	proto := reflect.TypeOf(Dummy{})
-	return &DummyMongoDbPersistence{*mngpersist.NewIdentifiableMongoDbPersistence(proto, collection)}
+	return &DummyMongoDbPersistence{*mngpersist.NewIdentifiableMongoDbPersistence(proto, "dummies")}
 }
 
 func (c *DummyMongoDbPersistence) Create(correlationId string, item Dummy) (result Dummy, err error) {

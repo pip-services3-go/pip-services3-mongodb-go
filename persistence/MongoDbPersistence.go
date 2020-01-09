@@ -185,9 +185,9 @@ func (c *MongoDbPersistence) SetReferences(references crefer.IReferences) {
 
 	// Get connection
 	c.DependencyResolver.SetReferences(references)
-	con, ok := c.DependencyResolver.GetOneOptional("connection").(MongoDbConnection)
+	con, ok := c.DependencyResolver.GetOneOptional("connection").(*MongoDbConnection)
 	if ok {
-		c.Connection = &con
+		c.Connection = con
 	}
 	// Or create a local one
 	if c.Connection == nil {
@@ -315,7 +315,7 @@ func (c *MongoDbPersistence) Open(correlationId string) error {
 	if errIndexes != nil {
 		c.Db = nil
 		c.Client = nil
-		return cerror.NewConnectionError(correlationId, "CONNECT_FAILED", "Connection to mongodb failed").WithCause(err)
+		return cerror.NewConnectionError(correlationId, "CREATE_IDX_FAILED", "Recreate indexes failed").WithCause(err)
 	}
 	for _, v := range keys {
 		c.Logger.Debug(correlationId, "Created index %s for collection %s", v, c.CollectionName)
@@ -379,7 +379,7 @@ func (c *MongoDbPersistence) Clear(correlationId string) error {
 	filter := bson.M{}
 	_, err := c.Collection.DeleteMany(context.TODO(), filter)
 	if err != nil {
-		return cerror.NewConnectionError(correlationId, "CONNECT_FAILED", "Connection to mongodb failed").WithCause(err)
+		return cerror.NewConnectionError(correlationId, "CLEAR_FAILED", "Clear MongoDbPersistence failed").WithCause(err)
 	}
 	return nil
 }

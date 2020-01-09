@@ -128,7 +128,7 @@ func (c *MongoDbConnectionResolver) composeUri(connections []*ccon.ConnectionPar
 			hosts += ","
 		}
 		if port != 0 {
-			hosts += host + strconv.Itoa(port)
+			hosts += host + ":" + strconv.Itoa(port)
 		}
 
 	}
@@ -206,19 +206,19 @@ func (c *MongoDbConnectionResolver) Resolve(correlationId string) (uri string, e
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		result, errConn := c.ConnectionResolver.ResolveAll(correlationId)
-		copy(connections, result)
-		// Validate connections
+		connections, errConn = c.ConnectionResolver.ResolveAll(correlationId)
+		//copy(connections, result)
+		//Validate connections
 		if errConn == nil {
 			errConn = c.validateConnections(correlationId, connections)
 		}
 	}()
 	go func() {
 		defer wg.Done()
-		result, errCred := c.CredentialResolver.Lookup(correlationId)
-		if errCred == nil {
-			credential = result
-		}
+		credential, errCred = c.CredentialResolver.Lookup(correlationId)
+		// if errCred == nil {
+		// 	credential = result
+		// }
 		// Credentials are not validated right now
 	}()
 	wg.Wait()

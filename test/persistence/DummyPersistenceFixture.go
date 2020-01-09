@@ -54,9 +54,9 @@ func (c *DummyPersistenceFixture) TestCrudOperations(t *testing.T) {
 	//Testing default sorting by Key field len
 
 	item1 := page.Data[0]
-	assert.Equal(t, item1.Key, dummy2.Key)
+	assert.Equal(t, item1.Key, dummy1.Key) // dummy2
 	item2 := page.Data[1]
-	assert.Equal(t, item2.Key, dummy1.Key)
+	assert.Equal(t, item2.Key, dummy2.Key) // dummy1
 
 	// Update the dummy
 	dummy1.Content = "Updated Content 1"

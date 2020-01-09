@@ -1,74 +1,74 @@
 package test_persistence
 
-// import (
-// 	"testing"
-// )
+import (
+	cconf "github.com/pip-services3-go/pip-services3-commons-go/v3/config"
+	cref "github.com/pip-services3-go/pip-services3-commons-go/v3/refer"
+	mngpersist "github.com/pip-services3-go/pip-services3-mongodb-go/v3/persistence"
+	"os"
+	"testing"
+)
 
-// func TestDummyMemoryPersistence(t *testing.T) {
+func TestDummyMongoDbConnection(t *testing.T) {
 
-// 	let connection: MongoDbConnection;
-//     let persistence: DummyMongoDbPersistence;
-//     let fixture: DummyPersistenceFixture;
+	var persistence *DummyMongoDbPersistence
+	var fixture DummyPersistenceFixture
+	var connection *mngpersist.MongoDbConnection
 
-//     let mongoUri = process.env['MONGO_URI'];
-//     let mongoHost = process.env['MONGO_HOST'] || 'localhost';
-//     let mongoPort = process.env['MONGO_PORT'] || 27017;
-//     let mongoDatabase = process.env['MONGO_DB'] || 'test';
-//     if (mongoUri == null && mongoHost == null)
-// 		return;
+	mongoUri := os.Getenv("MONGO_URI")
+	mongoHost := os.Getenv("MONGO_HOST")
+	if mongoHost == "" {
+		mongoHost = "localhost"
+	}
+	mongoPort := os.Getenv("MONGO_PORT")
+	if mongoPort == "" {
+		mongoPort = "27017"
+	}
+	mongoDatabase := os.Getenv("MONGO_DB")
+	if mongoDatabase == "" {
+		mongoDatabase = "test"
+	}
+	if mongoUri == "" && mongoHost == "" {
+		return
+	}
 
-// 		let dbConfig = ConfigParams.fromTuples(
-//             'connection.uri', mongoUri,
-//             'connection.host', mongoHost,
-//             'connection.port', mongoPort,
-//             'connection.database', mongoDatabase
-//         );
+	dbConfig := cconf.NewConfigParamsFromTuples(
+		"connection.uri", mongoUri,
+		"connection.host", mongoHost,
+		"connection.port", mongoPort,
+		"connection.database", mongoDatabase,
+	)
 
-//         connection = new MongoDbConnection();
-//         connection.configure(dbConfig);
+	connection = mngpersist.NewMongoDbConnection()
+	connection.Configure(dbConfig)
 
-//         persistence = new DummyMongoDbPersistence();
-//         persistence.setReferences(References.fromTuples(
-//             new Descriptor("pip-services", "connection", "mongodb", "default", "1.0"), connection
-//         ));
+	persistence = NewDummyMongoDbPersistence()
+	descr := cref.NewDescriptor("pip-services", "connection", "mongodb", "default", "1.0")
+	ref := cref.NewReferencesFromTuples(descr, connection)
+	persistence.SetReferences(ref)
 
-//         fixture = new DummyPersistenceFixture(persistence);
+	fixture = *NewDummyPersistenceFixture(persistence)
 
-//         connection.open(null, (err: any) => {
-//             if (err) {
-//                 done(err);
-//                 return;
-//             }
+	opnErr := connection.Open("")
+	if opnErr != nil {
+		t.Error("Error opened connection", opnErr)
+		return
+	}
+	defer connection.Close("")
 
-//             persistence.open(null, (err: any) => {
-//                 if (err) {
-//                     done(err);
-//                     return;
-//                 }
+	opnErr = persistence.Open("")
+	if opnErr != nil {
+		t.Error("Error opened persistence", opnErr)
+		return
+	}
+	defer persistence.Close("")
 
-//                 persistence.clear(null, (err) => {
-//                     done(err);
-//                 });
-//             });
-// 		});
+	opnErr = persistence.Clear("")
+	if opnErr != nil {
+		t.Error("Error cleaned persistence", opnErr)
+		return
+	}
 
-// 		////////////////////////////
+	t.Run("DummyMondoDbConnection:CRUD", fixture.TestCrudOperations)
+	t.Run("DummyMondoDbConnection:Batch", fixture.TestBatchOperations)
 
-// 		test('Crud Operations', (done) => {
-// 			fixture.testCrudOperations(done);
-// 		});
-
-// 		test('Batch Operations', (done) => {
-// 			fixture.testBatchOperations(done);
-// 		});
-
-// 		////////////////////////////
-
-// 		connection.close(null, (err) => {
-//             persistence.close(null, done);
-//         });
-
-// 	// t.Run("DummyMemoryPersistence:CRUD", fixture.TestCrudOperations)
-// 	// t.Run("DummyMemoryPersistence:Batch", fixture.TestBatchOperations)
-
-// }
+}
