@@ -70,7 +70,7 @@ func (c *DummyPersistenceFixture) TestCrudOperations(t *testing.T) {
 	assert.Equal(t, dummy1.Content, result.Content)
 
 	// Partially update the dummy
-	updateMap := *cdata.NewAnyValueMapFromTuples("Content", "Partially Updated Content 1")
+	updateMap := *cdata.NewAnyValueMapFromTuples("content", "Partially Updated Content 1")
 	result, err = c.persistence.UpdatePartially("", dummy1.Id, updateMap)
 	if err != nil {
 		t.Errorf("UpdatePartially method error %v", err)

@@ -2,6 +2,9 @@ package persistence
 
 import (
 	"context"
+	"reflect"
+	"time"
+
 	cconf "github.com/pip-services3-go/pip-services3-commons-go/v3/config"
 	cerror "github.com/pip-services3-go/pip-services3-commons-go/v3/errors"
 	crefer "github.com/pip-services3-go/pip-services3-commons-go/v3/refer"
@@ -9,7 +12,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	mongodrv "go.mongodb.org/mongo-driver/mongo"
 	mongoopt "go.mongodb.org/mongo-driver/mongo/options"
-	"reflect"
 )
 
 /*
@@ -234,38 +236,6 @@ func (c *MongoDbPersistence) EnsureIndex(keys interface{}, options *mongoopt.Ind
 }
 
 /*
- Converts object value from internal to func (c * MongoDbPersistence) format.
-
- @param value     an object in internal format to convert.
- @returns converted object in func (c * MongoDbPersistence) format.
-*/
-func (c *MongoDbPersistence) ConvertToPublic(value interface{}) interface{} {
-	if value != nil {
-		// if value._id != undefined {
-		//     value.id = value._id
-		//     delete value._id
-		// }
-	}
-	return value
-}
-
-/*
- Convert object value from func (c * MongoDbPersistence) to internal format.
-
- @param value     an object in func (c * MongoDbPersistence) format to convert.
- @returns converted object in internal format.
-*/
-func (c *MongoDbPersistence) ConvertFromPublic(value interface{}) interface{} {
-	if value != nil {
-		// if value.id != undefined {
-		//     value._id = value._id || value.id
-		//     delete value.id
-		// }
-	}
-	return value
-}
-
-/*
 Checks if the component is opened.
 
 @returns true if the component has been opened and false otherwise.
@@ -310,15 +280,19 @@ func (c *MongoDbPersistence) Open(correlationId string) error {
 		c.Client = nil
 		return cerror.NewConnectionError(correlationId, "CONNECT_FAILED", "Connection to mongodb failed").WithCause(err)
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
 	// Recreate indexes
-	keys, errIndexes := c.Collection.Indexes().CreateMany(context.TODO(), c.indexes, mongoopt.CreateIndexes())
-	if errIndexes != nil {
-		c.Db = nil
-		c.Client = nil
-		return cerror.NewConnectionError(correlationId, "CREATE_IDX_FAILED", "Recreate indexes failed").WithCause(err)
-	}
-	for _, v := range keys {
-		c.Logger.Debug(correlationId, "Created index %s for collection %s", v, c.CollectionName)
+	if len(c.indexes) > 0 {
+		keys, errIndexes := c.Collection.Indexes().CreateMany(ctx, c.indexes, mongoopt.CreateIndexes())
+		if errIndexes != nil {
+			c.Db = nil
+			c.Client = nil
+			return cerror.NewConnectionError(correlationId, "CREATE_IDX_FAILED", "Recreate indexes failed").WithCause(err)
+		}
+		for _, v := range keys {
+			c.Logger.Debug(correlationId, "Created index %s for collection %s", v, c.CollectionName)
+		}
 	}
 	c.opened = true
 	c.Logger.Debug(correlationId, "Connected to mongodb database %s, collection %s", c.DatabaseName, c.CollectionName)

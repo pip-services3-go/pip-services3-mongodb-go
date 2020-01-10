@@ -94,8 +94,12 @@ func (c *DummyMongoDbPersistence) GetPageByFilter(correlationId string, filter c
 	}
 
 	key := filter.GetAsNullableString("Key")
-
-	filterObj := bson.M{"key": key}
+	var filterObj bson.M
+	if *key != "" {
+		filterObj = bson.M{"key": *key}
+	} else {
+		filterObj = bson.M{}
+	}
 
 	tempPage, err := c.IdentifiableMongoDbPersistence.GetPageByFilter(correlationId,
 		filterObj, &paging,

@@ -88,7 +88,7 @@ func NewMongoDbConnection() (c *MongoDbConnection) {
 	mc := MongoDbConnection{
 		defaultConfig: *cconf.NewConfigParamsFromTuples(
 			"options.max_pool_size", "2",
-			"options.keep_alive", "1",
+			"options.keep_alive", "1000",
 			"options.connect_timeout", "5000",
 			"options.auto_reconnect", "true",
 			"options.max_page_size", "100",
@@ -161,7 +161,7 @@ func (c *MongoDbConnection) composeSettings() *mongoclopt.ClientOptions {
 	authUser := c.Options.GetAsString("auth_user")
 	authPassword := c.Options.GetAsString("auth_password")
 
-	settings := mongoclopt.ClientOptions{}
+	settings := mongoclopt.Client()
 	settings.MaxPoolSize = &maxPoolSize
 	settings.MaxConnIdleTime = &MaxConnIdleTime
 	//settings.KeepAlive = keepAlive
@@ -184,7 +184,7 @@ func (c *MongoDbConnection) composeSettings() *mongoclopt.ClientOptions {
 	authParams.Password = authPassword
 	settings.SetAuth(authParams)
 
-	return &settings
+	return settings
 }
 
 /*
@@ -202,12 +202,15 @@ func (c *MongoDbConnection) Open(correlationId string) error {
 	}
 
 	c.Logger.Debug(correlationId, "Connecting to mongodb")
-	settings := c.composeSettings()
-
+	// TODO: Need wrote correct settings composer!!!
+	//settings := c.composeSettings()
+	settings := mongoclopt.Client()
 	//settings.useNewUrlParser = true;
 	//settings.useUnifiedTopology = true;
 
-	client, err := mongodrv.NewClient(settings.ApplyURI(uri))
+	settings.ApplyURI(uri)
+	client, err := mongodrv.NewClient(settings)
+
 	if err != nil {
 		err = cerror.NewConnectionError(correlationId, "CONNECT_FAILED", "Create client for mongodb failed").WithCause(err)
 		return err

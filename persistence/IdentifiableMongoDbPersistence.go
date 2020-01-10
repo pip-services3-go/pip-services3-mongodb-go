@@ -6,7 +6,8 @@ import (
 	cdata "github.com/pip-services3-go/pip-services3-commons-go/v3/data"
 	cmpersist "github.com/pip-services3-go/pip-services3-data-go/v3/persistence"
 	"go.mongodb.org/mongo-driver/bson"
-	mongoopt "go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo"
+	mngoptions "go.mongodb.org/mongo-driver/mongo/options"
 	"math/rand"
 	"reflect"
 	"time"
@@ -141,16 +142,6 @@ func (c *IdentifiableMongoDbPersistence) Configure(config cconf.ConfigParams) {
 }
 
 /*
-   Converts the given object from the func (c *IdentifiableMongoDbPersistence) partial format.
-
-   - value     the object to convert from the func (c *IdentifiableMongoDbPersistence) partial format.
-   Returns the initial object.
-*/
-func (c *IdentifiableMongoDbPersistence) ConvertFromPublicPartial(value interface{}) interface{} {
-	return c.ConvertFromPublic(value)
-}
-
-/*
    Gets a page of data items retrieved by a given filter and sorted according to sort parameters.
 
    This method shall be called by a func (c *IdentifiableMongoDbPersistence) getPageByFilter method from child class that
@@ -174,7 +165,7 @@ func (c *IdentifiableMongoDbPersistence) GetPageByFilter(correlationId string, f
 	pagingEnabled := paging.Total
 
 	// Configure options
-	var options mongoopt.FindOptions
+	var options mngoptions.FindOptions
 
 	if skip >= 0 {
 		options.Skip = &skip
@@ -197,11 +188,11 @@ func (c *IdentifiableMongoDbPersistence) GetPageByFilter(correlationId string, f
 
 	for cursor.Next(context.TODO()) {
 		docPointer := reflect.New(c.Prototype)
-		curErr := cursor.Decode(docPointer)
+		curErr := cursor.Decode(docPointer.Interface())
 		if curErr != nil {
 			continue
 		}
-		item := docPointer.Interface()
+		item := docPointer.Elem().Interface()
 		items = append(items, item)
 	}
 
@@ -235,7 +226,7 @@ func (c *IdentifiableMongoDbPersistence) GetPageByFilter(correlationId string, f
 func (c *IdentifiableMongoDbPersistence) GetListByFilter(correlationId string, filter interface{}, sort interface{}, sel interface{}) (items []interface{}, err error) {
 
 	// Configure options
-	var options mongoopt.FindOptions
+	var options mngoptions.FindOptions
 
 	if sort != nil {
 		options.Sort = sort
@@ -251,11 +242,11 @@ func (c *IdentifiableMongoDbPersistence) GetListByFilter(correlationId string, f
 
 	for cursor.Next(context.TODO()) {
 		docPointer := reflect.New(c.Prototype)
-		curErr := cursor.Decode(docPointer)
+		curErr := cursor.Decode(docPointer.Interface())
 		if curErr != nil {
 			continue
 		}
-		item := docPointer.Interface()
+		item := docPointer.Elem().Interface()
 		items = append(items, item)
 	}
 
@@ -291,16 +282,18 @@ func (c *IdentifiableMongoDbPersistence) GetOneById(correlationId string, id int
 	filter := bson.M{"_id": id}
 
 	docPointer := reflect.New(c.Prototype)
-	ferr := c.Collection.FindOne(context.TODO(), filter).Decode(docPointer)
+	foRes := c.Collection.FindOne(context.TODO(), filter)
+	ferr := foRes.Decode(docPointer.Interface())
 	if ferr != nil {
+		if ferr == mongo.ErrNoDocuments {
+			return nil, nil
+		}
 		return nil, ferr
 	}
 
 	c.Logger.Trace(correlationId, "Retrieved from %s by id = %s", c.CollectionName, id)
-	item = docPointer.Interface()
-	//item = c.convertToPublic(item);
+	item = docPointer.Elem().Interface()
 	return item, nil
-
 }
 
 /*
@@ -320,7 +313,7 @@ func (c *IdentifiableMongoDbPersistence) GetOneRandom(correlationId string, filt
 	if cntErr != nil {
 		return nil, cntErr
 	}
-	var options mongoopt.FindOptions
+	var options mngoptions.FindOptions
 	rand.Seed(time.Now().UnixNano())
 	var itemNum int64 = rand.Int63n(docCount)
 	var itemLim int64 = 1
@@ -338,11 +331,11 @@ func (c *IdentifiableMongoDbPersistence) GetOneRandom(correlationId string, filt
 	}
 
 	docPointer := reflect.New(c.Prototype)
-	err = cursor.Decode(docPointer)
+	err = cursor.Decode(docPointer.Interface())
 	if err != nil {
 		return nil, err
 	}
-	item = docPointer.Interface()
+	item = docPointer.Elem().Interface()
 	return item, nil
 
 }
@@ -388,8 +381,8 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 	cmpersist.GenerateObjectId(&newItem)
 	id := cmpersist.GetObjectId(newItem)
 	filter := bson.M{"_id": id}
-	var options mongoopt.FindOneAndReplaceOptions
-	retDoc := mongoopt.After
+	var options mngoptions.FindOneAndReplaceOptions
+	retDoc := mngoptions.After
 	options.ReturnDocument = &retDoc
 	upsert := true
 	options.Upsert = &upsert
@@ -403,11 +396,14 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 	c.Logger.Trace(correlationId, "Set in %s with id = %s", c.CollectionName, id)
 
 	docPointer := reflect.New(c.Prototype)
-	err = frRes.Decode(docPointer)
+	err = frRes.Decode(docPointer.Interface())
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
 		return nil, err
 	}
-	item = docPointer.Interface()
+	item = docPointer.Elem().Interface()
 	return item, nil
 }
 
@@ -428,8 +424,8 @@ func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item inter
 
 	filter := bson.M{"_id": id}
 	update := bson.D{{"$set", newItem}}
-	var options mongoopt.FindOneAndUpdateOptions
-	retDoc := mongoopt.After
+	var options mngoptions.FindOneAndUpdateOptions
+	retDoc := mngoptions.After
 	options.ReturnDocument = &retDoc
 
 	fuRes := c.Collection.FindOneAndUpdate(context.TODO(), filter, update, &options)
@@ -439,11 +435,14 @@ func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item inter
 	}
 	c.Logger.Trace(correlationId, "Updated in %s with id = %s", c.CollectionName, id)
 	docPointer := reflect.New(c.Prototype)
-	err = fuRes.Decode(docPointer)
+	err = fuRes.Decode(docPointer.Interface())
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
 		return nil, err
 	}
-	item = docPointer.Interface()
+	item = docPointer.Elem().Interface()
 	return item, nil
 }
 
@@ -461,13 +460,16 @@ func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, i
 		return nil, nil
 	}
 
-	//newItem := data.GetAsObject()
+	newItem := bson.M{}
+	for k, v := range data.Value() {
+		newItem[k] = v
+	}
 
 	filter := bson.M{"_id": id}
-	//update := bson.D{{"$set", newItem}}
-	update := bson.D{{"$set", data}}
-	var options mongoopt.FindOneAndUpdateOptions
-	retDoc := mongoopt.After
+	update := bson.D{{"$set", newItem}}
+	//update := bson.D{{"$set", data}}
+	var options mngoptions.FindOneAndUpdateOptions
+	retDoc := mngoptions.After
 	options.ReturnDocument = &retDoc
 	fuRes := c.Collection.FindOneAndUpdate(context.TODO(), filter, update, &options)
 	if fuRes.Err() != nil {
@@ -475,11 +477,14 @@ func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, i
 	}
 	c.Logger.Trace(correlationId, "Updated partially in %s with id = %s", c.Collection, id)
 	docPointer := reflect.New(c.Prototype)
-	err = fuRes.Decode(docPointer)
+	err = fuRes.Decode(docPointer.Interface())
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
 		return nil, err
 	}
-	item = docPointer.Interface()
+	item = docPointer.Elem().Interface()
 	return item, nil
 }
 
@@ -499,11 +504,14 @@ func (c *IdentifiableMongoDbPersistence) DeleteById(correlationId string, id int
 	}
 	c.Logger.Trace(correlationId, "Deleted from %s with id = %s", c.CollectionName, id)
 	docPointer := reflect.New(c.Prototype)
-	err = fdRes.Decode(docPointer)
+	err = fdRes.Decode(docPointer.Interface())
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
 		return nil, err
 	}
-	item = docPointer.Interface()
+	item = docPointer.Elem().Interface()
 	return item, nil
 }
 
