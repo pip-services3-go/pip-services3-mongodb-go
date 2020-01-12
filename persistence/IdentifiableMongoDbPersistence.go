@@ -134,10 +134,8 @@ func NewIdentifiableMongoDbPersistence(proto reflect.Type, collection string) *I
 
    - config    configuration parameters to be set.
 */
-func (c *IdentifiableMongoDbPersistence) Configure(config cconf.ConfigParams) {
-	//super.configure(config);
-	c.Configure(config)
-
+func (c *IdentifiableMongoDbPersistence) Configure(config *cconf.ConfigParams) {
+	c.MongoDbPersistence.Configure(config)
 	c.maxPageSize = (int32)(config.GetAsIntegerWithDefault("options.max_page_size", (int)(c.maxPageSize)))
 }
 

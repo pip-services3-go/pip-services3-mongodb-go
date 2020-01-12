@@ -6,21 +6,21 @@ import (
 	"testing"
 )
 
-type DummyPersistenceFixture struct {
-	dummy1      Dummy
-	dummy2      Dummy
-	persistence IDummyPersistence
+type DummyRefPersistenceFixture struct {
+	dummy1      *Dummy
+	dummy2      *Dummy
+	persistence IDummyRefPersistence
 }
 
-func NewDummyPersistenceFixture(persistence IDummyPersistence) *DummyPersistenceFixture {
-	c := DummyPersistenceFixture{}
-	c.dummy1 = Dummy{Id: "", Key: "Key 11", Content: "Content 1"}
-	c.dummy2 = Dummy{Id: "", Key: "Key 2", Content: "Content 2"}
+func NewDummyRefPersistenceFixture(persistence IDummyRefPersistence) *DummyRefPersistenceFixture {
+	c := DummyRefPersistenceFixture{}
+	c.dummy1 = &Dummy{Id: "", Key: "Key 11", Content: "Content 1"}
+	c.dummy2 = &Dummy{Id: "", Key: "Key 2", Content: "Content 2"}
 	c.persistence = persistence
 	return &c
 }
 
-func (c *DummyPersistenceFixture) TestCrudOperations(t *testing.T) {
+func (c *DummyRefPersistenceFixture) TestCrudOperations(t *testing.T) {
 	var dummy1 Dummy
 	var dummy2 Dummy
 
@@ -28,7 +28,7 @@ func (c *DummyPersistenceFixture) TestCrudOperations(t *testing.T) {
 	if err != nil {
 		t.Errorf("Create method error %v", err)
 	}
-	dummy1 = result
+	dummy1 = *result
 	assert.NotNil(t, dummy1)
 	assert.NotNil(t, dummy1.Id)
 	assert.Equal(t, c.dummy1.Key, dummy1.Key)
@@ -39,7 +39,7 @@ func (c *DummyPersistenceFixture) TestCrudOperations(t *testing.T) {
 	if err != nil {
 		t.Errorf("Create method error %v", err)
 	}
-	dummy2 = result
+	dummy2 = *result
 	assert.NotNil(t, dummy2)
 	assert.NotNil(t, dummy2.Id)
 	assert.Equal(t, c.dummy2.Key, dummy2.Key)
@@ -54,13 +54,13 @@ func (c *DummyPersistenceFixture) TestCrudOperations(t *testing.T) {
 	//Testing default sorting by Key field len
 
 	item1 := page.Data[0]
-	assert.Equal(t, item1.Key, dummy2.Key) // dummy2
+	assert.Equal(t, item1.Key, dummy2.Key)
 	item2 := page.Data[1]
-	assert.Equal(t, item2.Key, dummy1.Key) // dummy1
+	assert.Equal(t, item2.Key, dummy1.Key)
 
 	// Update the dummy
 	dummy1.Content = "Updated Content 1"
-	result, err = c.persistence.Update("", dummy1)
+	result, err = c.persistence.Update("", &dummy1)
 	if err != nil {
 		t.Errorf("GetPageByFilter method error %v", err)
 	}
@@ -70,7 +70,7 @@ func (c *DummyPersistenceFixture) TestCrudOperations(t *testing.T) {
 	assert.Equal(t, dummy1.Content, result.Content)
 
 	// Partially update the dummy
-	updateMap := *cdata.NewAnyValueMapFromTuples("content", "Partially Updated Content 1")
+	updateMap := *cdata.NewAnyValueMapFromTuples("Content", "Partially Updated Content 1")
 	result, err = c.persistence.UpdatePartially("", dummy1.Id, updateMap)
 	if err != nil {
 		t.Errorf("UpdatePartially method error %v", err)
@@ -107,11 +107,10 @@ func (c *DummyPersistenceFixture) TestCrudOperations(t *testing.T) {
 		t.Errorf("GetOneById method error %v", err)
 	}
 	// Try to get item, must be an empty Dummy struct
-	temp := Dummy{}
-	assert.Equal(t, temp, result)
+	assert.Nil(t, result)
 }
 
-func (c *DummyPersistenceFixture) TestBatchOperations(t *testing.T) {
+func (c *DummyRefPersistenceFixture) TestBatchOperations(t *testing.T) {
 	var dummy1 Dummy
 	var dummy2 Dummy
 
@@ -120,7 +119,7 @@ func (c *DummyPersistenceFixture) TestBatchOperations(t *testing.T) {
 	if err != nil {
 		t.Errorf("Create method error %v", err)
 	}
-	dummy1 = result
+	dummy1 = *result
 	assert.NotNil(t, dummy1)
 	assert.NotNil(t, dummy1.Id)
 	assert.Equal(t, c.dummy1.Key, dummy1.Key)
@@ -131,7 +130,7 @@ func (c *DummyPersistenceFixture) TestBatchOperations(t *testing.T) {
 	if err != nil {
 		t.Errorf("Create method error %v", err)
 	}
-	dummy2 = result
+	dummy2 = *result
 	assert.NotNil(t, dummy2)
 	assert.NotNil(t, dummy2.Id)
 	assert.Equal(t, c.dummy2.Key, dummy2.Key)

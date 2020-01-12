@@ -7,10 +7,10 @@ import (
 	cconf "github.com/pip-services3-go/pip-services3-commons-go/v3/config"
 )
 
-func TestDummyMongoDbPersistence(t *testing.T) {
+func TestDummyMapMongoDbPersistence(t *testing.T) {
 
-	var persistence *DummyMongoDbPersistence
-	var fixture DummyPersistenceFixture
+	var persistence *DummyMapMongoDbPersistence
+	var fixture DummyMapPersistenceFixture
 
 	mongoUri := os.Getenv("MONGO_URI")
 	mongoHost := os.Getenv("MONGO_HOST")
@@ -36,10 +36,10 @@ func TestDummyMongoDbPersistence(t *testing.T) {
 		"connection.database", mongoDatabase,
 	)
 
-	persistence = NewDummyMongoDbPersistence()
+	persistence = NewDummyMapMongoDbPersistence()
 	persistence.Configure(dbConfig)
 
-	fixture = *NewDummyPersistenceFixture(persistence)
+	fixture = *NewDummyMapPersistenceFixture(persistence)
 
 	opnErr := persistence.Open("")
 	if opnErr != nil {
@@ -54,7 +54,7 @@ func TestDummyMongoDbPersistence(t *testing.T) {
 		return
 	}
 
-	t.Run("DummyMongoDbPersistence:CRUD", fixture.TestCrudOperations)
-	t.Run("DummyMongoDbPersistence:Batch", fixture.TestBatchOperations)
+	t.Run("DummyMapMongoDbPersistence:CRUD", fixture.TestCrudOperations)
+	t.Run("DummyMapMongoDbPersistence:Batch", fixture.TestBatchOperations)
 
 }
