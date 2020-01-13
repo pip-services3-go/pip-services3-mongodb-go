@@ -235,6 +235,56 @@ func (c *MongoDbPersistence) EnsureIndex(keys interface{}, options *mongoopt.Ind
 	c.indexes = append(c.indexes, index)
 }
 
+// Convert object (map) from public view
+// replace "Id" to "_id" field
+func (c *MongoDbPersistence) ConvertFromPublic(item *interface{}) {
+	var value interface{} = *item
+	if reflect.TypeOf(item).Kind() != reflect.Ptr {
+		panic("ConvertFromPublic:Error! Item is not a pointer!")
+	}
+
+	if reflect.TypeOf(value).Kind() == reflect.Map {
+		m, ok := value.(map[string]interface{})
+		if ok {
+			m["_id"] = m["Id"]
+			delete(m, "Id")
+			return
+		}
+	}
+
+	if reflect.TypeOf(value).Kind() == reflect.Struct {
+
+		return
+	}
+
+	panic("ConvertFromPublic:Error! Item must to be a map[string]interface{} or struct!")
+}
+
+// Convert object (map) to public view
+// replace "_id" to "Id" field
+func (c *MongoDbPersistence) ConvertToPublic(item *interface{}) {
+	var value interface{} = *item
+	if reflect.TypeOf(item).Kind() != reflect.Ptr {
+		panic("ConvertToPublic:Error! Item is not a pointer!")
+	}
+
+	if reflect.TypeOf(value).Kind() == reflect.Map {
+		m, ok := value.(map[string]interface{})
+		if ok {
+			m["Id"] = m["_id"]
+			delete(m, "_id")
+			return
+		}
+	}
+
+	if reflect.TypeOf(value).Kind() == reflect.Struct {
+
+		return
+	}
+
+	panic("ConvertToPublic:Error! Item must to be a map[string]interface{} or struct!")
+}
+
 /*
 Checks if the component is opened.
 

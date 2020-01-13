@@ -191,6 +191,10 @@ func (c *IdentifiableMongoDbPersistence) GetPageByFilter(correlationId string, f
 			continue
 		}
 		item := docPointer.Elem().Interface()
+
+		// convert to public for map
+		c.ConvertToPublic(&item)
+
 		items = append(items, item)
 	}
 
@@ -245,6 +249,10 @@ func (c *IdentifiableMongoDbPersistence) GetListByFilter(correlationId string, f
 			continue
 		}
 		item := docPointer.Elem().Interface()
+
+		// convert to public for map
+		c.ConvertToPublic(&item)
+
 		items = append(items, item)
 	}
 
@@ -291,6 +299,10 @@ func (c *IdentifiableMongoDbPersistence) GetOneById(correlationId string, id int
 
 	c.Logger.Trace(correlationId, "Retrieved from %s by id = %s", c.CollectionName, id)
 	item = docPointer.Elem().Interface()
+
+	// convert to public for map
+	c.ConvertToPublic(&item)
+
 	return item, nil
 }
 
@@ -334,6 +346,10 @@ func (c *IdentifiableMongoDbPersistence) GetOneRandom(correlationId string, filt
 		return nil, err
 	}
 	item = docPointer.Elem().Interface()
+
+	// convert to public for map
+	c.ConvertToPublic(&item)
+
 	return item, nil
 
 }
@@ -353,7 +369,9 @@ func (c *IdentifiableMongoDbPersistence) Create(correlationId string, item inter
 	newItem = cmpersist.CloneObject(item)
 	// Assign unique id if not exist
 	cmpersist.GenerateObjectId(&newItem)
+	c.ConvertFromPublic(&newItem)
 	insRes, insErr := c.Collection.InsertOne(context.TODO(), newItem)
+	c.ConvertToPublic(&newItem)
 	if insErr != nil {
 		return nil, insErr
 	}
@@ -378,6 +396,7 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 	// Assign unique id if not exist
 	cmpersist.GenerateObjectId(&newItem)
 	id := cmpersist.GetObjectId(newItem)
+	c.ConvertFromPublic(&newItem)
 	filter := bson.M{"_id": id}
 	var options mngoptions.FindOneAndReplaceOptions
 	retDoc := mngoptions.After
@@ -402,6 +421,8 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 		return nil, err
 	}
 	item = docPointer.Elem().Interface()
+	// convert to public for map
+	c.ConvertToPublic(&item)
 	return item, nil
 }
 
@@ -441,6 +462,10 @@ func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item inter
 		return nil, err
 	}
 	item = docPointer.Elem().Interface()
+
+	// convert to public for map
+	c.ConvertToPublic(&item)
+
 	return item, nil
 }
 
@@ -465,7 +490,6 @@ func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, i
 
 	filter := bson.M{"_id": id}
 	update := bson.D{{"$set", newItem}}
-	//update := bson.D{{"$set", data}}
 	var options mngoptions.FindOneAndUpdateOptions
 	retDoc := mngoptions.After
 	options.ReturnDocument = &retDoc
@@ -483,6 +507,10 @@ func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, i
 		return nil, err
 	}
 	item = docPointer.Elem().Interface()
+
+	// convert to public for map
+	c.ConvertToPublic(&item)
+
 	return item, nil
 }
 
@@ -510,6 +538,10 @@ func (c *IdentifiableMongoDbPersistence) DeleteById(correlationId string, id int
 		return nil, err
 	}
 	item = docPointer.Elem().Interface()
+
+	// convert to public for map
+	c.ConvertToPublic(&item)
+
 	return item, nil
 }
 
