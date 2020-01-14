@@ -1,9 +1,7 @@
 package persistence
 
 import (
-	"context"
 	"reflect"
-	"time"
 
 	cconf "github.com/pip-services3-go/pip-services3-commons-go/v3/config"
 	cerror "github.com/pip-services3-go/pip-services3-commons-go/v3/errors"
@@ -46,13 +44,13 @@ import (
    - auth_source:               (optional) authentication source
    - debug:                     (optional) enable debug output (default: false).
 
- ### References ###
+ References
 
  - <code>\*:logger:\*:\*:1.0</code>           (optional) [[https://rawgit.com/pip-services-node/pip-services3-components-node/master/doc/api/interfaces/log.ilogger.html ILogger]] components to pass log messages
  - <code>\*:discovery:\*:\*:1.0</code>        (optional) [[https://rawgit.com/pip-services-node/pip-services3-components-node/master/doc/api/interfaces/connect.idiscovery.html IDiscovery]] services
  - <code>\*:credential-store:\*:\*:1.0</code> (optional) Credential stores to resolve credentials
 
- ### Example ###
+ Example
 
      class MyMongoDbPersistence extends MongoDbPersistence<MyData> {
 
@@ -100,45 +98,26 @@ type MongoDbPersistence struct {
 	indexes         []mongodrv.IndexModel
 	Prototype       reflect.Type
 
-	/*
-	 The dependency resolver.
-	*/
+	// The dependency resolver.
 	DependencyResolver crefer.DependencyResolver
-	/*
-	 The logger.
-	*/
+	// The logger.
 	Logger clog.CompositeLogger
-	/*
-	 The MongoDB connection component.
-	*/
+	// The MongoDB connection component.
 	Connection *MongoDbConnection
-	/*
-	 The MongoDB connection object.
-	*/
+	// The MongoDB connection object.
 	Client *mongodrv.Client
-	/*
-	 The MongoDB database name.
-	*/
+	// The MongoDB database name.
 	DatabaseName string
-	/*
-	 The MongoDB colleciton object.
-	*/
+	// The MongoDB colleciton object.
 	CollectionName string
-	/*
-	  The MongoDb database object.
-	*/
+	//  The MongoDb database object.
 	Db *mongodrv.Database
-	/*
-	 The MongoDb collection object.
-	*/
+	// The MongoDb collection object.
 	Collection *mongodrv.Collection
 }
 
-/*
-  Creates a new instance of the persistence component.
-
-  @param collection    (optional) a collection name.
-*/
+// Creates a new instance of the persistence component.
+// - collection    (optional) a collection name.
 func NewMongoDbPersistence(proto reflect.Type, collection string) *MongoDbPersistence {
 	mdbp := MongoDbPersistence{}
 	mdbp.defaultConfig = *cconf.NewConfigParamsFromTuples(
@@ -161,25 +140,17 @@ func NewMongoDbPersistence(proto reflect.Type, collection string) *MongoDbPersis
 	return &mdbp
 }
 
-/*
- Configures component by passing configuration parameters.
-
- @param config    configuration parameters to be set.
-*/
+//  Configures component by passing configuration parameters.
+//  - config    configuration parameters to be set.
 func (c *MongoDbPersistence) Configure(config *cconf.ConfigParams) {
 	config = config.SetDefaults(&c.defaultConfig)
 	c.config = *config
-
 	c.DependencyResolver.Configure(config)
-
 	c.CollectionName = config.GetAsStringWithDefault("collection", c.CollectionName)
 }
 
-/*
-Sets references to dependent components.
-
-@param references 	references to locate the component dependencies.
-*/
+// Sets references to dependent components.
+// - references 	references to locate the component dependencies.
 func (c *MongoDbPersistence) SetReferences(references crefer.IReferences) {
 	c.references = references
 	c.Logger.SetReferences(references)
@@ -199,9 +170,7 @@ func (c *MongoDbPersistence) SetReferences(references crefer.IReferences) {
 	}
 }
 
-/*
-Unsets (clears) previously set references to dependent components.
-*/
+// Unsets (clears) previously set references to dependent components.
 func (c *MongoDbPersistence) UnsetReferences() {
 	c.Connection = nil
 }
@@ -218,11 +187,9 @@ func (c *MongoDbPersistence) createConnection() *MongoDbConnection {
 	return connection
 }
 
-/*
- Adds index definition to create it on opening
- @param keys index keys (fields)
- @param options index options
-*/
+//  Adds index definition to create it on opening
+//  - keys index keys (fields)
+//  - options index options
 func (c *MongoDbPersistence) EnsureIndex(keys interface{}, options *mongoopt.IndexOptions) {
 	if keys == nil {
 		return
@@ -284,21 +251,15 @@ func (c *MongoDbPersistence) ConvertToPublic(item *interface{}) {
 	panic("ConvertToPublic:Error! Item must to be a map[string]interface{} or struct!")
 }
 
-/*
-Checks if the component is opened.
-
-@returns true if the component has been opened and false otherwise.
-*/
+// Checks if the component is opened.
+// Returns true if the component has been opened and false otherwise.
 func (c *MongoDbPersistence) IsOpen() bool {
 	return c.opened
 }
 
-/*
-Opens the component.
-
-@param correlationId 	(optional) transaction id to trace execution through call chain.
-@param callback 			callback function that receives error or null no errors occured.
-*/
+// Opens the component.
+// - correlationId 	(optional) transaction id to trace execution through call chain.
+// - callback 			callback function that receives error or null no errors occured.
 func (c *MongoDbPersistence) Open(correlationId string) error {
 
 	var err error
@@ -329,11 +290,12 @@ func (c *MongoDbPersistence) Open(correlationId string) error {
 		c.Client = nil
 		return cerror.NewConnectionError(correlationId, "CONNECT_FAILED", "Connection to mongodb failed").WithCause(err)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
+	//ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	//defer cancel()
+
 	// Recreate indexes
 	if len(c.indexes) > 0 {
-		keys, errIndexes := c.Collection.Indexes().CreateMany(ctx, c.indexes, mongoopt.CreateIndexes())
+		keys, errIndexes := c.Collection.Indexes().CreateMany(c.Connection.Ctx, c.indexes, mongoopt.CreateIndexes())
 		if errIndexes != nil {
 			c.Db = nil
 			c.Client = nil
@@ -348,12 +310,10 @@ func (c *MongoDbPersistence) Open(correlationId string) error {
 	return nil
 }
 
-/*
-Closes component and frees used resources.
+// Closes component and frees used resources.
+// - correlationId 	(optional) transaction id to trace execution through call chain.
+// - callback 			callback function that receives error or null no errors occured.
 
-@param correlationId 	(optional) transaction id to trace execution through call chain.
-@param callback 			callback function that receives error or null no errors occured.
-*/
 func (c *MongoDbPersistence) Close(correlationId string) error {
 	var err error
 
@@ -376,22 +336,16 @@ func (c *MongoDbPersistence) Close(correlationId string) error {
 	return nil
 }
 
-/*
-Clears component state.
-
-@param correlationId 	(optional) transaction id to trace execution through call chain.
-@param callback 			callback function that receives error or null no errors occured.
-*/
+// Clears component state.
+// - correlationId 	(optional) transaction id to trace execution through call chain.
+// - callback 			callback function that receives error or null no errors occured.
 func (c *MongoDbPersistence) Clear(correlationId string) error {
 	// Return error if collection is not set
 	if c.CollectionName == "" {
 		return cerror.NewError("Collection name is not defined")
 	}
 
-	// filter := bson.M{}
-	// _, err := c.Collection.DeleteMany(context.TODO(), filter)
-
-	err := c.Collection.Drop(context.TODO())
+	err := c.Collection.Drop(c.Connection.Ctx)
 	if err != nil {
 		return cerror.NewConnectionError(correlationId, "CLEAR_FAILED", "Clear collection failed.").WithCause(err)
 	}

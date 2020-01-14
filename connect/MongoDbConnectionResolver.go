@@ -17,7 +17,7 @@ validates them and generates a connection URI.
 
 It is able to process multiple connections to MongoDB cluster nodes.
 
-### Configuration parameters ###
+ Configuration parameters
 
 - connection(s):
   - discovery_key:               (optional) a key to retrieve the connection from [[https://rawgit.com/pip-services-node/pip-services3-components-node/master/doc/api/interfaces/connect.idiscovery.html IDiscovery]]
@@ -32,19 +32,15 @@ It is able to process multiple connections to MongoDB cluster nodes.
 
 ### References ###
 
-- <code>\*:discovery:\*:\*:1.0</code>             (optional) [[https://rawgit.com/pip-services-node/pip-services3-components-node/master/doc/api/interfaces/connect.idiscovery.html IDiscovery]] services
-- <code>\*:credential-store:\*:\*:1.0</code>      (optional) Credential stores to resolve credentials
+- *:discovery:*:*:1.0             (optional) [[https://rawgit.com/pip-services-node/pip-services3-components-node/master/doc/api/interfaces/connect.idiscovery.html IDiscovery]] services
+- *:credential-store:*:*:1.0      (optional) Credential stores to resolve credentials
 */
 
 //implements IReferenceable, IConfigurable
 type MongoDbConnectionResolver struct {
-	/*
-	   The connections resolver.
-	*/
+	//The connections resolver.
 	ConnectionResolver ccon.ConnectionResolver
-	/*
-	   The credentials resolver.
-	*/
+	//The credentials resolver.
 	CredentialResolver auth.CredentialResolver
 }
 
@@ -55,21 +51,15 @@ func NewMongoDbConnectionResolver() *MongoDbConnectionResolver {
 	return &mongoCon
 }
 
-/*
-   Configures component by passing configuration parameters.
-
-   @param config    configuration parameters to be set.
-*/
+// Configures component by passing configuration parameters.
+// - config    configuration parameters to be set.
 func (c *MongoDbConnectionResolver) Configure(config *cconf.ConfigParams) {
 	c.ConnectionResolver.Configure(config)
 	c.CredentialResolver.Configure(config)
 }
 
-/*
-	Sets references to dependent components.
-
-	@param references 	references to locate the component dependencies.
-*/
+// Sets references to dependent components.
+// - references 	references to locate the component dependencies.
 func (c *MongoDbConnectionResolver) SetReferences(references crefer.IReferences) {
 	c.ConnectionResolver.SetReferences(references)
 	c.CredentialResolver.SetReferences(references)
@@ -198,12 +188,9 @@ func (c *MongoDbConnectionResolver) composeUri(connections []*ccon.ConnectionPar
 	return uri
 }
 
-/*
-   Resolves MongoDB connection URI from connection and credential parameters.
-
-   @param correlationId     (optional) transaction id to trace execution through call chain.
-   @param callback 			callback function that receives resolved URI or error.
-*/
+// Resolves MongoDB connection URI from connection and credential parameters.
+// - correlationId     (optional) transaction id to trace execution through call chain.
+// - callback 			callback function that receives resolved URI or error.
 func (c *MongoDbConnectionResolver) Resolve(correlationId string) (uri string, err error) {
 	var connections []*ccon.ConnectionParams
 	var credential *auth.CredentialParams
@@ -215,7 +202,6 @@ func (c *MongoDbConnectionResolver) Resolve(correlationId string) (uri string, e
 	go func() {
 		defer wg.Done()
 		connections, errConn = c.ConnectionResolver.ResolveAll(correlationId)
-		//copy(connections, result)
 		//Validate connections
 		if errConn == nil {
 			errConn = c.validateConnections(correlationId, connections)
@@ -224,9 +210,6 @@ func (c *MongoDbConnectionResolver) Resolve(correlationId string) (uri string, e
 	go func() {
 		defer wg.Done()
 		credential, errCred = c.CredentialResolver.Lookup(correlationId)
-		// if errCred == nil {
-		// 	credential = result
-		// }
 		// Credentials are not validated right now
 	}()
 	wg.Wait()

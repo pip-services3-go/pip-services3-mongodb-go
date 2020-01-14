@@ -14,13 +14,13 @@ import (
 	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
 )
 
-/**
+/*
 MongoDB connection using plain driver.
 
 By defining a connection and sharing it through multiple persistence components
 you can reduce number of used database connections.
 
-### Configuration parameters ###
+ Configuration parameters
 
 - connection(s):
   - discovery_key:             (optional) a key to retrieve the connection from [[https://rawgit.com/pip-services-node/pip-services3-components-node/master/doc/api/interfaces/connect.idiscovery.html IDiscovery]]
@@ -44,17 +44,17 @@ you can reduce number of used database connections.
   - auth_source:               (optional) authentication source
   - debug:                     (optional) enable debug output (default: false). (Not used)
 
-### References ###
+ References
 
-- *:logger:*:*:1.0</code>           (optional) [[https://rawgit.com/pip-services-node/pip-services3-components-node/master/doc/api/interfaces/log.ilogger.html ILogger]] components to pass log messages
-- *:discovery:*:*:1.0</code>        (optional) [[https://rawgit.com/pip-services-node/pip-services3-components-node/master/doc/api/interfaces/connect.idiscovery.html IDiscovery]] services
-- *:credential-store:*:*:1.0</code> (optional) Credential stores to resolve credentials
+- *:logger:*:*:1.0           (optional) [[https://rawgit.com/pip-services-node/pip-services3-components-node/master/doc/api/interfaces/log.ilogger.html ILogger]] components to pass log messages
+- *:discovery:*:*:1.0        (optional) [[https://rawgit.com/pip-services-node/pip-services3-components-node/master/doc/api/interfaces/connect.idiscovery.html IDiscovery]] services
+- *:credential-store:*:*:1.0 (optional) Credential stores to resolve credentials
 */
 
 //export class MongoDbConnection implements IReferenceable, IConfigurable, IOpenable {
 type MongoDbConnection struct {
 	defaultConfig cconf.ConfigParams
-	//ctx           context.Context
+	Ctx           context.Context
 	// The logger.
 	Logger clog.CompositeLogger
 	//   The connection resolver.
@@ -69,9 +69,7 @@ type MongoDbConnection struct {
 	Db *mongodrv.Database
 }
 
-/*
-   Creates a new instance of the connection component.
-*/
+//Creates a new instance of the connection component.
 func NewMongoDbConnection() (c *MongoDbConnection) {
 	mc := MongoDbConnection{
 		defaultConfig: *cconf.NewConfigParamsFromTuples(
@@ -97,31 +95,23 @@ func NewMongoDbConnection() (c *MongoDbConnection) {
 	return &mc
 }
 
-/*
-   Configures component by passing configuration parameters.
-   @param config    configuration parameters to be set.
-*/
+// Configures component by passing configuration parameters.
+// - config    configuration parameters to be set.
 func (c *MongoDbConnection) Configure(config *cconf.ConfigParams) {
 	config = config.SetDefaults(&c.defaultConfig)
-
 	c.ConnectionResolver.Configure(config)
-
 	c.Options = *c.Options.Override(config.GetSection("options"))
 }
 
-/*
- Sets references to dependent components.
- references 	references to locate the component dependencies.
-*/
+//  Sets references to dependent components.
+//  references 	references to locate the component dependencies.
 func (c *MongoDbConnection) SetReferences(references crefer.IReferences) {
 	c.Logger.SetReferences(references)
 	c.ConnectionResolver.SetReferences(references)
 }
 
-/*
- Checks if the component is opened.
- returns true if the component has been opened and false otherwise.
-*/
+//  Checks if the component is opened.
+//  returns true if the component has been opened and false otherwise.
 func (c *MongoDbConnection) IsOpen() bool {
 	return c.Connection != nil
 }
@@ -169,11 +159,10 @@ func (c *MongoDbConnection) composeSettings(settings *mongoclopt.ClientOptions) 
 	}
 }
 
-/*
-	 Opens the component.
-	 @param correlationId 	(optional) transaction id to trace execution through call chain.
-     @param callback 			callback function that receives error or nil no errors occured.
-*/
+// Opens the component.
+// - correlationId 	(optional) transaction id to trace execution through call chain.
+// - callback 			callback function that receives error or nil no errors occured.
+
 func (c *MongoDbConnection) Open(correlationId string) error {
 	uri, err := c.ConnectionResolver.Resolve(correlationId)
 	if err != nil {
@@ -197,13 +186,10 @@ func (c *MongoDbConnection) Open(correlationId string) error {
 	}
 	cs, _ := connstring.Parse(uri)
 	c.DatabaseName = cs.Database
-
-	// // Todo: change timeout params, must get it from options
-	// ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	// c.ctx = ctx
+	//ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	// defer cancel()
-	// err = client.Connect(ctx)
-	err = client.Connect(context.TODO())
+	c.Ctx = context.Background()
+	err = client.Connect(c.Ctx)
 	if err != nil {
 		err = cerror.NewConnectionError(correlationId, "CONNECT_FAILED", "Connection to mongodb failed").WithCause(err)
 		return err
@@ -213,19 +199,16 @@ func (c *MongoDbConnection) Open(correlationId string) error {
 	return nil
 }
 
-/*
-	 Closes component and frees used resources.
+// Closes component and frees used resources.
+// - correlationId 	(optional) transaction id to trace execution through call chain.
+// - callback 			callback function that receives error or nil no errors occured.
 
-	 @param correlationId 	(optional) transaction id to trace execution through call chain.
-     @param callback 			callback function that receives error or nil no errors occured.
-*/
 func (c *MongoDbConnection) Close(correlationId string) error {
 	if c.Connection == nil {
 		return nil
 	}
 
-	//err := c.Connection.Disconnect(c.ctx)
-	err := c.Connection.Disconnect(context.TODO())
+	err := c.Connection.Disconnect(c.Ctx)
 	c.Connection = nil
 	c.Db = nil
 	c.DatabaseName = ""
