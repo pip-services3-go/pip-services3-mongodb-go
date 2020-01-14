@@ -33,16 +33,16 @@ you can reduce number of used database connections.
   - password:                  (optional) user password
 - options:
   - max_pool_size:             (optional) maximum connection pool size (default: 2)
-  - keep_alive:                (optional) enable connection keep alive (default: true)
+  - keep_alive:                (optional) enable connection keep alive in ms, if zero connection are keeped indefinitely (default: 0)
   - connect_timeout:           (optional) connection timeout in milliseconds (default: 5000)
   - socket_timeout:            (optional) socket timeout in milliseconds (default: 360000)
-  - auto_reconnect:            (optional) enable auto reconnection (default: true)
-  - reconnect_interval:        (optional) reconnection interval in milliseconds (default: 1000)
+  - auto_reconnect:            (optional) enable auto reconnection (default: true) (Not used)
+  - reconnect_interval:        (optional) reconnection interval in milliseconds (default: 1000) (Not used)
   - max_page_size:             (optional) maximum page size (default: 100)
   - replica_set:               (optional) name of replica set
-  - ssl:                       (optional) enable SSL connection (default: false)
+  - ssl:                       (optional) enable SSL connection (default: false) (Not release in this version)
   - auth_source:               (optional) authentication source
-  - debug:                     (optional) enable debug output (default: false).
+  - debug:                     (optional) enable debug output (default: false). (Not used)
 
 ### References ###
 
@@ -55,29 +55,17 @@ you can reduce number of used database connections.
 type MongoDbConnection struct {
 	defaultConfig cconf.ConfigParams
 	//ctx           context.Context
-	/*
-	   The logger.
-	*/
+	// The logger.
 	Logger clog.CompositeLogger
-	/*
-	   The connection resolver.
-	*/
+	//   The connection resolver.
 	ConnectionResolver mcon.MongoDbConnectionResolver
-	/*
-	   The configuration options.
-	*/
+	//   The configuration options.
 	Options cconf.ConfigParams
-	/*
-	   The MongoDB connection object.
-	*/
+	//   The MongoDB connection object.
 	Connection *mongodrv.Client
-	/*
-	   The MongoDB database name.
-	*/
+	//   The MongoDB database name.
 	DatabaseName string
-	/*
-	   The MongoDb database object.
-	*/
+	//   The MongoDb database object.
 	Db *mongodrv.Database
 }
 
@@ -88,11 +76,10 @@ func NewMongoDbConnection() (c *MongoDbConnection) {
 	mc := MongoDbConnection{
 		defaultConfig: *cconf.NewConfigParamsFromTuples(
 			"options.max_pool_size", "2",
-			"options.keep_alive", "1000",
+			"options.keep_alive", "0",
 			"options.connect_timeout", "5000",
-			"options.auto_reconnect", "true",
 			"options.max_page_size", "100",
-			"options.debug", "true"),
+		),
 		/*
 		 The logger.
 		*/
@@ -124,7 +111,7 @@ func (c *MongoDbConnection) Configure(config *cconf.ConfigParams) {
 
 /*
  Sets references to dependent components.
- @param references 	references to locate the component dependencies.
+ references 	references to locate the component dependencies.
 */
 func (c *MongoDbConnection) SetReferences(references crefer.IReferences) {
 	c.Logger.SetReferences(references)
@@ -133,82 +120,75 @@ func (c *MongoDbConnection) SetReferences(references crefer.IReferences) {
 
 /*
  Checks if the component is opened.
- @returns true if the component has been opened and false otherwise.
+ returns true if the component has been opened and false otherwise.
 */
 func (c *MongoDbConnection) IsOpen() bool {
 	return c.Connection != nil
 }
 
-func (c *MongoDbConnection) composeSettings() *mongoclopt.ClientOptions {
+func (c *MongoDbConnection) composeSettings(settings *mongoclopt.ClientOptions) {
 	var maxPoolSize uint64
 	maxPoolSize = (uint64)(c.Options.GetAsInteger("max_pool_size"))
 	var MaxConnIdleTime time.Duration
 	keepAlive := c.Options.GetAsInteger("keep_alive")
-	MaxConnIdleTime = (time.Duration)(keepAlive)
+	MaxConnIdleTime = (time.Duration)(keepAlive) * time.Millisecond
 	var ConnectTimeout time.Duration
 	connectTimeoutMS := c.Options.GetAsInteger("connect_timeout")
-	ConnectTimeout = (time.Duration)(connectTimeoutMS)
+	ConnectTimeout = (time.Duration)(connectTimeoutMS) * time.Millisecond
 	var SocketTimeout time.Duration
 	socketTimeoutMS := c.Options.GetAsInteger("socket_timeout")
-	SocketTimeout = (time.Duration)(socketTimeoutMS)
-	//autoReconnect := c.Options.GetAsNullableBoolean("auto_reconnect");
-	//reconnectInterval := c.Options.GetAsNullableInteger("reconnect_interval")
-	//debug := c.Options.GetAsNullableBoolean("debug");
+	SocketTimeout = (time.Duration)(socketTimeoutMS) * time.Millisecond
 
-	//ssl := c.Options.GetAsNullableBoolean("ssl")
 	replicaSet := c.Options.GetAsNullableString("replica_set")
 	authSource := c.Options.GetAsString("auth_source")
 	authUser := c.Options.GetAsString("auth_user")
 	authPassword := c.Options.GetAsString("auth_password")
 
-	settings := mongoclopt.Client()
-	settings.MaxPoolSize = &maxPoolSize
-	settings.MaxConnIdleTime = &MaxConnIdleTime
-	//settings.KeepAlive = keepAlive
-	//settings.autoReconnect: autoReconnect
-	//settings.ReconnectInterval = reconnectInterval
-	settings.ConnectTimeout = &ConnectTimeout
-	settings.SocketTimeout = &SocketTimeout
+	settings.SetMaxPoolSize(maxPoolSize)
+	settings.SetMaxConnIdleTime(MaxConnIdleTime)
+	settings.SetConnectTimeout(ConnectTimeout)
+	settings.SetSocketTimeout(SocketTimeout)
 
+	if replicaSet != nil {
+		settings.SetReplicaSet(*replicaSet)
+	}
+
+	// TODO: Relase configure TLS(SSL) connection to MongoDB
+	//ssl := c.Options.GetAsNullableBoolean("ssl")
 	// if ssl != nil {
 	// 	settings.ssl = ssl
 	// }
-	if replicaSet != nil {
-		settings.ReplicaSet = replicaSet
-	}
 
 	// Auth params
-	var authParams mongoclopt.Credential
-	authParams.AuthSource = authSource
-	authParams.Username = authUser
-	authParams.Password = authPassword
-	settings.SetAuth(authParams)
-
-	return settings
+	if authSource != "" && authUser != "" && authPassword != "" {
+		var authParams mongoclopt.Credential
+		authParams.AuthSource = authSource
+		authParams.Username = authUser
+		authParams.Password = authPassword
+		settings.SetAuth(authParams)
+	}
 }
 
 /*
 	 Opens the component.
-
 	 @param correlationId 	(optional) transaction id to trace execution through call chain.
      @param callback 			callback function that receives error or nil no errors occured.
 */
 func (c *MongoDbConnection) Open(correlationId string) error {
 	uri, err := c.ConnectionResolver.Resolve(correlationId)
-
 	if err != nil {
 		c.Logger.Error(correlationId, err, "Failed to resolve MongoDb connection")
 		return err
 	}
-
 	c.Logger.Debug(correlationId, "Connecting to mongodb")
-	// TODO: Need wrote correct settings composer!!!
-	//settings := c.composeSettings()
+
 	settings := mongoclopt.Client()
+	settings.ApplyURI(uri)
+	c.composeSettings(settings)
+
 	//settings.useNewUrlParser = true;
 	//settings.useUnifiedTopology = true;
 
-	settings.ApplyURI(uri)
 	client, err := mongodrv.NewClient(settings)
 
 	if err != nil {
@@ -230,7 +210,6 @@ func (c *MongoDbConnection) Open(correlationId string) error {
 	}
 	c.Connection = client
 	c.Db = client.Database(c.DatabaseName)
-	//c.DatabaseName = c.Db.Name()
 	return nil
 }
 

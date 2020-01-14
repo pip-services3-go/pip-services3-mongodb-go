@@ -9,7 +9,6 @@ import (
 	cerror "github.com/pip-services3-go/pip-services3-commons-go/v3/errors"
 	crefer "github.com/pip-services3-go/pip-services3-commons-go/v3/refer"
 	clog "github.com/pip-services3-go/pip-services3-components-go/v3/log"
-	"go.mongodb.org/mongo-driver/bson"
 	mongodrv "go.mongodb.org/mongo-driver/mongo"
 	mongoopt "go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -146,7 +145,7 @@ func NewMongoDbPersistence(proto reflect.Type, collection string) *MongoDbPersis
 		"collection", "",
 		"dependencies.connection", "*:connection:mongodb:*:1.0",
 		"options.max_pool_size", "2",
-		"options.keep_alive", "1",
+		"options.keep_alive", "1000",
 		"options.connect_timeout", "5000",
 		"options.auto_reconnect", "true",
 		"options.max_page_size", "100",
@@ -349,7 +348,7 @@ func (c *MongoDbPersistence) Open(correlationId string) error {
 	return nil
 }
 
-/**
+/*
 Closes component and frees used resources.
 
 @param correlationId 	(optional) transaction id to trace execution through call chain.
@@ -389,21 +388,12 @@ func (c *MongoDbPersistence) Clear(correlationId string) error {
 		return cerror.NewError("Collection name is not defined")
 	}
 
-	// c._db.dropCollection(c._collectionName, (err) => {
-	//     if (err && (err.message != "ns not found" || err.message != "topology was destroyed"))
-	//         err = null
+	// filter := bson.M{}
+	// _, err := c.Collection.DeleteMany(context.TODO(), filter)
 
-	//     if (err) {
-	//         err = new ConnectionException(correlationId, "CONNECT_FAILED", "Connection to mongodb failed")
-	//             .withCause(err)
-	//     }
-
-	//     if (callback) callback(err)
-	// })
-	filter := bson.M{}
-	_, err := c.Collection.DeleteMany(context.TODO(), filter)
+	err := c.Collection.Drop(context.TODO())
 	if err != nil {
-		return cerror.NewConnectionError(correlationId, "CLEAR_FAILED", "Clear MongoDbPersistence failed").WithCause(err)
+		return cerror.NewConnectionError(correlationId, "CLEAR_FAILED", "Clear collection failed.").WithCause(err)
 	}
 	return nil
 }

@@ -50,7 +50,7 @@ func TestDummyMongoDbPersistence(t *testing.T) {
 
 	opnErr = persistence.Clear("")
 	if opnErr != nil {
-		t.Error("Error cleaned persistence", opnErr)
+		t.Error("Error cleaned persistence", opnErr.Error())
 		return
 	}
 

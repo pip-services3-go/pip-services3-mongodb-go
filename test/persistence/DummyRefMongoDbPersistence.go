@@ -15,9 +15,8 @@ type DummyRefMongoDbPersistence struct {
 }
 
 func NewDummyRefMongoDbPersistence() *DummyRefMongoDbPersistence {
-	// var t *Dummy
-	// proto := reflect.TypeOf(t)
-	proto := reflect.TypeOf(Dummy{})
+
+	proto := reflect.TypeOf(&Dummy{})
 	return &DummyRefMongoDbPersistence{*mngpersist.NewIdentifiableMongoDbPersistence(proto, "dummies")}
 }
 

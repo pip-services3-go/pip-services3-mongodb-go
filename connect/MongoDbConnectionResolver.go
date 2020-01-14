@@ -2,6 +2,7 @@ package connect
 
 import (
 	cconf "github.com/pip-services3-go/pip-services3-commons-go/v3/config"
+	cdata "github.com/pip-services3-go/pip-services3-commons-go/v3/data"
 	cerr "github.com/pip-services3-go/pip-services3-commons-go/v3/errors"
 	crefer "github.com/pip-services3-go/pip-services3-commons-go/v3/refer"
 	"github.com/pip-services3-go/pip-services3-components-go/v3/auth"
@@ -157,10 +158,17 @@ func (c *MongoDbConnectionResolver) composeUri(connections []*ccon.ConnectionPar
 			}
 		}
 	}
-
-	// Define additional parameters parameters
-	//options := cconf.ConfigParams.MergeConfigs(connections).Override(credential);
-	options := cconf.NewEmptyConfigParams()
+	// Define additional parameters
+	consConf := cdata.NewEmptyStringValueMap()
+	for _, v := range connections {
+		consConf.Append(v.Value())
+	}
+	var options *cconf.ConfigParams
+	if credential != nil {
+		options = cconf.NewConfigParamsFromMaps(consConf.Value(), credential.Value())
+	} else {
+		options = cconf.NewConfigParamsFromValue(consConf.Value())
+	}
 	options.Remove("uri")
 	options.Remove("host")
 	options.Remove("port")
