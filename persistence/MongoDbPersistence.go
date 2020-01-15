@@ -45,13 +45,13 @@ Configuration parameters:
    	- auth_source:               (optional) authentication source
    	- debug:                     (optional) enable debug output (default: false). (not used)
 
- References
+ References:
 
  - *:logger:*:*:1.0           (optional) ILogger components to pass log messages
  - *:discovery:*:*:1.0        (optional) IDiscovery services
  - *:credential-store:*:*:1.0 (optional) Credential stores to resolve credentials
 
- Example
+ Example:
 
 	type MyMongoDbPersistence struct {
 		MongoDbPersistence
