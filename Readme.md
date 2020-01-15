@@ -6,10 +6,9 @@ reusable data processing and persistence components:
 Client was based on [official mongodb go driver](https://github.com/mongodb/mongo-go-driver)
 [Official docs](https://docs.mongodb.com/ecosystem/drivers/go/) for MongoDb Go driver
 
-- [MongoDbPersistence](https://godoc.org/github.com/pip-services3-go/pip-services3-mongodb-go/persistence)
-- [IdentifiableMongoDbPersistence](https://godoc.org/github.com/pip-services3-go/pip-services3-mongodb-go/persistence)
-- [FilePersistence](https://godoc.org/github.com/pip-services3-go/pip-services3-mongodb-go/persistence)
-- [IdentifiableFilePersistence](https://godoc.org/github.com/pip-services3-go/pip-services3-mongodb-go/persistence)
+- [build](https://godoc.org/github.com/pip-services3-go/pip-services3-mongodb-go/build)
+- [connect](https://godoc.org/github.com/pip-services3-go/pip-services3-mongodb-go/connect)
+- [persistence](https://godoc.org/github.com/pip-services3-go/pip-services3-mongodb-go/persistence)
 
 Quick Links:
 
