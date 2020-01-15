@@ -12,82 +12,125 @@ import (
 )
 
 /*
- Abstract persistence component that stores data in MongoDB using plain driver.
+ MongoDbPersistence abstract persistence component that stores data in MongoDB using plain driver.
 
  This is the most basic persistence component that is only
  able to store data items of any type. Specific CRUD operations
  over the data items must be implemented in child classes by
- accessing <code>c._db</code> or <code>c._collection</code> properties.
+ accessing c.Db or c.Collection properties.
 
- ### Configuration parameters ###
+Configuration parameters:
 
  - collection:                  (optional) MongoDB collection name
  - connection(s):
-    - discovery_key:             (optional) a key to retrieve the connection from [[https://rawgit.com/pip-services-node/pip-services3-components-node/master/doc/api/interfaces/connect.idiscovery.html IDiscovery]]
-  - host:                      host name or IP address
-   - port:                      port number (default: 27017)
-   - uri:                       resource URI or connection string with all parameters in it
+    - discovery_key:             (optional) a key to retrieve the connection from IDiscovery
+  	- host:                      host name or IP address
+	- port:                      port number (default: 27017)
+	- database:                  database name
+   	- uri:                       resource URI or connection string with all parameters in it
  - credential(s):
-   - store_key:                 (optional) a key to retrieve the credentials from [[https://rawgit.com/pip-services-node/pip-services3-components-node/master/doc/api/interfaces/auth.icredentialstore.html ICredentialStore]]
-   - username:                  (optional) user name
-   - password:                  (optional) user password
+   	- store_key:                 (optional) a key to retrieve the credentials from ICredentialStore
+   	- username:                  (optional) user name
+   	- password:                  (optional) user password
  - options:
-   - max_pool_size:             (optional) maximum connection pool size (default: 2)
-   - keep_alive:                (optional) enable connection keep alive (default: true)
-   - connect_timeout:           (optional) connection timeout in milliseconds (default: 5000)
-   - socket_timeout:            (optional) socket timeout in milliseconds (default: 360000)
-   - auto_reconnect:            (optional) enable auto reconnection (default: true)
-   - reconnect_interval:        (optional) reconnection interval in milliseconds (default: 1000)
-   - max_page_size:             (optional) maximum page size (default: 100)
-   - replica_set:               (optional) name of replica set
-   - ssl:                       (optional) enable SSL connection (default: false)
-   - auth_source:               (optional) authentication source
-   - debug:                     (optional) enable debug output (default: false).
+   	- max_pool_size:             (optional) maximum connection pool size (default: 2)
+   	- keep_alive:                (optional) enable connection keep alive (default: true)
+   	- connect_timeout:           (optional) connection timeout in milliseconds (default: 5000)
+   	- socket_timeout:            (optional) socket timeout in milliseconds (default: 360000)
+   	- auto_reconnect:            (optional) enable auto reconnection (default: true) (not used)
+   	- reconnect_interval:        (optional) reconnection interval in milliseconds (default: 1000) (not used)
+   	- max_page_size:             (optional) maximum page size (default: 100)
+   	- replica_set:               (optional) name of replica set
+   	- ssl:                       (optional) enable SSL connection (default: false) (not implements in this release)
+   	- auth_source:               (optional) authentication source
+   	- debug:                     (optional) enable debug output (default: false). (not used)
 
  References
 
- - <code>\*:logger:\*:\*:1.0</code>           (optional) [[https://rawgit.com/pip-services-node/pip-services3-components-node/master/doc/api/interfaces/log.ilogger.html ILogger]] components to pass log messages
- - <code>\*:discovery:\*:\*:1.0</code>        (optional) [[https://rawgit.com/pip-services-node/pip-services3-components-node/master/doc/api/interfaces/connect.idiscovery.html IDiscovery]] services
- - <code>\*:credential-store:\*:\*:1.0</code> (optional) Credential stores to resolve credentials
+ - *:logger:*:*:1.0           (optional) ILogger components to pass log messages
+ - *:discovery:*:*:1.0        (optional) IDiscovery services
+ - *:credential-store:*:*:1.0 (optional) Credential stores to resolve credentials
 
  Example
 
-     class MyMongoDbPersistence extends MongoDbPersistence<MyData> {
+	type MyMongoDbPersistence struct {
+		MongoDbPersistence
+	}
 
-       func (c * MongoDbPersistence) constructor() {
-           base("mydata")
+    func NewMyMongoDbPersistence(proto reflect.Type, collection string) *MyMongoDbPersistence {
+		mmdbp:= MyMongoDbPersistence{}
+		mmdbp.MongoDbPersistence = NewMongoDbPersistence(proto, collection)
+		return &mmdbp
+    }
+
+    func (c * MyMongoDbPersistence) GetByName(correlationId string, name string) (item interface{}, err error) {
+        filter := bson.M{"name": name}
+		docPointer := getProtoPtr(c.Prototype)
+		foRes := c.Collection.FindOne(context.TODO(), filter)
+		ferr := foRes.Decode(docPointer.Interface())
+		if ferr != nil {
+			if ferr == mongo.ErrNoDocuments {
+				return nil, nil
+			}
+			return nil, ferr
+		}
+		item = docPointer.Elem().Interface()
+		c.ConvertToPublic(&item)
+		return item, nil
        }
 
-       func (c * MongoDbPersistence) getByName(correlationId: string, name: string, callback: (err, item) => void) {
-         let criteria = { name: name }
-         c._model.findOne(criteria, callback)
-       })
+    func (c * MyMongoDbPersistence) Set(correlatonId string, item MyData) (result interface{}, err error) {
+		newItem = cmpersist.CloneObject(item)
+		// Assign unique id if not exist
+		cmpersist.GenerateObjectId(&newItem)
+		id := cmpersist.GetObjectId(newItem)
+		c.ConvertFromPublic(&newItem)
+		filter := bson.M{"_id": id}
+		var options mngoptions.FindOneAndReplaceOptions
+		retDoc := mngoptions.After
+		options.ReturnDocument = &retDoc
+		upsert := true
+		options.Upsert = &upsert
+		frRes := c.Collection.FindOneAndReplace(context.TODO(), filter, newItem, &options)
+		if frRes.Err() != nil {
+			return nil, frRes.Err()
+		}
+		docPointer := getProtoPtr(c.Prototype)
+		err = frRes.Decode(docPointer.Interface())
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				return nil, nil
+			}
+			return nil, err
+		}
+		item = docPointer.Elem().Interface()
+		c.ConvertToPublic(&item)
+		return item, nil
+    }
 
-       func (c * MongoDbPersistence) set(correlatonId: string, item: MyData, callback: (err) => void) {
-         let criteria = { name: item.name }
-         let options = { upsert: true, new: true }
-         c._model.findOneAndUpdate(criteria, item, options, callback)
-       }
+    persistence := NewMyMongoDbPersistence(reflect.TypeOf(MyData{}), "mycollection")
+    persistence.Configure(NewConfigParamsFromTuples(
+        "host", "localhost",
+		"port", "27017",
+		"database", "test",
+    ))
 
-     }
+	opnErr := persitence.Open("123")
+	if opnErr != nil {
+		...
+	}
 
-     let persistence = new MyMongoDbPersistence()
-     persistence.configure(ConfigParams.fromTuples(
-         "host", "localhost",
-         "port", 27017
-     ))
+	resItem, setErr := persistence.Set("123", MyData{ name: "ABC" })
+	if setErr != nil {
+		...
+	}
 
-     persitence.open("123", (err) => {
-          ...
-     })
-
-     persistence.set("123", { name: "ABC" }, (err) => {
-         persistence.getByName("123", "ABC", (err, item) => {
-             console.log(item)                   // Result: { name: "ABC" }
-         })
-     })
+	item, getErr := persistence.GetByName("123", "ABC")
+	if getErr != nil {
+		...
+	}
+    fmt.Println(item)                   // Result: { name: "ABC" }
 */
-//implements IReferenceable, IUnreferenceable, IConfigurable, IOpenable, ICleanable
 type MongoDbPersistence struct {
 	defaultConfig cconf.ConfigParams
 
@@ -116,8 +159,14 @@ type MongoDbPersistence struct {
 	Collection *mongodrv.Collection
 }
 
-// Creates a new instance of the persistence component.
-// - collection    (optional) a collection name.
+// NewMongoDbPersistence are creates a new instance of the persistence component.
+// Parameters:
+//	- proto reflect.Type
+//	type of saved data, need for correct decode from DB
+// 	- collection  string
+//  a collection name.
+// Return *MongoDbPersistence
+// new created MongoDbPersistence component
 func NewMongoDbPersistence(proto reflect.Type, collection string) *MongoDbPersistence {
 	mdbp := MongoDbPersistence{}
 	mdbp.defaultConfig = *cconf.NewConfigParamsFromTuples(
@@ -140,8 +189,10 @@ func NewMongoDbPersistence(proto reflect.Type, collection string) *MongoDbPersis
 	return &mdbp
 }
 
-//  Configures component by passing configuration parameters.
-//  - config    configuration parameters to be set.
+// Configure method is configures component by passing configuration parameters.
+// Parameters:
+// 	- config  *cconf.ConfigParams
+//  configuration parameters to be set.
 func (c *MongoDbPersistence) Configure(config *cconf.ConfigParams) {
 	config = config.SetDefaults(&c.defaultConfig)
 	c.config = *config
@@ -149,8 +200,10 @@ func (c *MongoDbPersistence) Configure(config *cconf.ConfigParams) {
 	c.CollectionName = config.GetAsStringWithDefault("collection", c.CollectionName)
 }
 
-// Sets references to dependent components.
-// - references 	references to locate the component dependencies.
+// SetReferences method are sets references to dependent components.
+// Parameters:
+// 	- references crefer.IReferences
+//	references to locate the component dependencies.
 func (c *MongoDbPersistence) SetReferences(references crefer.IReferences) {
 	c.references = references
 	c.Logger.SetReferences(references)
@@ -170,7 +223,7 @@ func (c *MongoDbPersistence) SetReferences(references crefer.IReferences) {
 	}
 }
 
-// Unsets (clears) previously set references to dependent components.
+// UnsetReferences method is unsets (clears) previously set references to dependent components.
 func (c *MongoDbPersistence) UnsetReferences() {
 	c.Connection = nil
 }
@@ -187,9 +240,12 @@ func (c *MongoDbPersistence) createConnection() *MongoDbConnection {
 	return connection
 }
 
-//  Adds index definition to create it on opening
-//  - keys index keys (fields)
-//  - options index options
+// EnsureIndex method are adds index definition to create it on opening
+// Parameters:
+// 	- keys interface{}
+//	index keys (fields)
+//  - options *mongoopt.IndexOptions
+// 	index options
 func (c *MongoDbPersistence) EnsureIndex(keys interface{}, options *mongoopt.IndexOptions) {
 	if keys == nil {
 		return
@@ -201,8 +257,10 @@ func (c *MongoDbPersistence) EnsureIndex(keys interface{}, options *mongoopt.Ind
 	c.indexes = append(c.indexes, index)
 }
 
-// Convert object (map) from public view
-// replace "Id" to "_id" field
+// ConvertFromPublic method help convert object (map) from public view by replaced "Id" to "_id" field
+// Parameters:
+// 	- item *interface{}
+// 	converted item
 func (c *MongoDbPersistence) ConvertFromPublic(item *interface{}) {
 	var value interface{} = *item
 	if reflect.TypeOf(item).Kind() != reflect.Ptr {
@@ -226,8 +284,10 @@ func (c *MongoDbPersistence) ConvertFromPublic(item *interface{}) {
 	panic("ConvertFromPublic:Error! Item must to be a map[string]interface{} or struct!")
 }
 
-// Convert object (map) to public view
-// replace "_id" to "Id" field
+// ConvertToPublic method is convert object (map) to public view by replaced "_id" to "Id" field
+// Parameters:
+// 	- item *interface{}
+// 	converted item
 func (c *MongoDbPersistence) ConvertToPublic(item *interface{}) {
 	var value interface{} = *item
 	if reflect.TypeOf(item).Kind() != reflect.Ptr {
@@ -251,15 +311,18 @@ func (c *MongoDbPersistence) ConvertToPublic(item *interface{}) {
 	panic("ConvertToPublic:Error! Item must to be a map[string]interface{} or struct!")
 }
 
-// Checks if the component is opened.
+// IsOpen method is checks if the component is opened.
 // Returns true if the component has been opened and false otherwise.
 func (c *MongoDbPersistence) IsOpen() bool {
 	return c.opened
 }
 
-// Opens the component.
-// - correlationId 	(optional) transaction id to trace execution through call chain.
-// - callback 			callback function that receives error or null no errors occured.
+// Open method is opens the component.
+// Parameters:
+// 	- correlationId  string
+//	(optional) transaction id to trace execution through call chain.
+// Return error
+// error or nil when no errors occured.
 func (c *MongoDbPersistence) Open(correlationId string) error {
 
 	var err error
@@ -310,10 +373,12 @@ func (c *MongoDbPersistence) Open(correlationId string) error {
 	return nil
 }
 
-// Closes component and frees used resources.
-// - correlationId 	(optional) transaction id to trace execution through call chain.
-// - callback 			callback function that receives error or null no errors occured.
-
+// Close methos closes component and frees used resources.
+// Parameters:
+// 	- correlationId string
+//	(optional) transaction id to trace execution through call chain.
+// Return error
+// error or nil when no errors occured.
 func (c *MongoDbPersistence) Close(correlationId string) error {
 	var err error
 
@@ -336,9 +401,12 @@ func (c *MongoDbPersistence) Close(correlationId string) error {
 	return nil
 }
 
-// Clears component state.
-// - correlationId 	(optional) transaction id to trace execution through call chain.
-// - callback 			callback function that receives error or null no errors occured.
+// Clear method are clears component state.
+// Parameters:
+// 	- correlationId string
+// 	(optional) transaction id to trace execution through call chain.
+// Returns error
+// error or nil when no errors occured.
 func (c *MongoDbPersistence) Clear(correlationId string) error {
 	// Return error if collection is not set
 	if c.CollectionName == "" {

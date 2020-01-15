@@ -12,31 +12,28 @@ import (
 )
 
 /*
-Helper class that resolves MongoDB connection and credential parameters,
+MongoDbConnectionResolver a helper struct  that resolves MongoDB connection and credential parameters,
 validates them and generates a connection URI.
-
 It is able to process multiple connections to MongoDB cluster nodes.
 
- Configuration parameters
+Configuration parameters
 
 - connection(s):
-  - discovery_key:               (optional) a key to retrieve the connection from [[https://rawgit.com/pip-services-node/pip-services3-components-node/master/doc/api/interfaces/connect.idiscovery.html IDiscovery]]
+  - discovery_key:               (optional) a key to retrieve the connection from IDiscovery
   - host:                        host name or IP address
   - port:                        port number (default: 27017)
   - database:                    database name
   - uri:                         resource URI or connection string with all parameters in it
 - credential(s):
-  - store_key:                   (optional) a key to retrieve the credentials from [[https://rawgit.com/pip-services-node/pip-services3-components-node/master/doc/api/interfaces/auth.icredentialstore.html ICredentialStore]]
+  - store_key:                   (optional) a key to retrieve the credentials from ICredentialStore
   - username:                    user name
   - password:                    user password
 
-### References ###
+ References
 
-- *:discovery:*:*:1.0             (optional) [[https://rawgit.com/pip-services-node/pip-services3-components-node/master/doc/api/interfaces/connect.idiscovery.html IDiscovery]] services
+- *:discovery:*:*:1.0             (optional) IDiscovery services
 - *:credential-store:*:*:1.0      (optional) Credential stores to resolve credentials
 */
-
-//implements IReferenceable, IConfigurable
 type MongoDbConnectionResolver struct {
 	//The connections resolver.
 	ConnectionResolver ccon.ConnectionResolver
@@ -44,6 +41,8 @@ type MongoDbConnectionResolver struct {
 	CredentialResolver auth.CredentialResolver
 }
 
+// NewMongoDbConnectionResolver creates new connection resolver
+// Retruns *MongoDbConnectionResolver
 func NewMongoDbConnectionResolver() *MongoDbConnectionResolver {
 	mongoCon := MongoDbConnectionResolver{}
 	mongoCon.ConnectionResolver = *ccon.NewEmptyConnectionResolver()
@@ -51,15 +50,19 @@ func NewMongoDbConnectionResolver() *MongoDbConnectionResolver {
 	return &mongoCon
 }
 
-// Configures component by passing configuration parameters.
-// - config    configuration parameters to be set.
+// Configure is configures component by passing configuration parameters.
+// Parameters:
+// 	- config  *cconf.ConfigParams
+//  configuration parameters to be set.
 func (c *MongoDbConnectionResolver) Configure(config *cconf.ConfigParams) {
 	c.ConnectionResolver.Configure(config)
 	c.CredentialResolver.Configure(config)
 }
 
-// Sets references to dependent components.
-// - references 	references to locate the component dependencies.
+// SetReferences is sets references to dependent components.
+// Parameters:
+// 	- references crefer.IReferences
+//	references to locate the component dependencies.
 func (c *MongoDbConnectionResolver) SetReferences(references crefer.IReferences) {
 	c.ConnectionResolver.SetReferences(references)
 	c.CredentialResolver.SetReferences(references)
@@ -188,9 +191,12 @@ func (c *MongoDbConnectionResolver) composeUri(connections []*ccon.ConnectionPar
 	return uri
 }
 
-// Resolves MongoDB connection URI from connection and credential parameters.
-// - correlationId     (optional) transaction id to trace execution through call chain.
-// - callback 			callback function that receives resolved URI or error.
+// Resolve method are resolves MongoDB connection URI from connection and credential parameters.
+// Parameters:
+// 	- correlationId  string
+//	(optional) transaction id to trace execution through call chain.
+// Returns uri string, err error
+// resolved URI and error, if this occured.
 func (c *MongoDbConnectionResolver) Resolve(correlationId string) (uri string, err error) {
 	var connections []*ccon.ConnectionParams
 	var credential *auth.CredentialParams

@@ -6,22 +6,17 @@ import (
 	cmngpersist "github.com/pip-services3-go/pip-services3-mongodb-go/v3/persistence"
 )
 
-/*
-  Creates MongoDb components by their descriptors.
-
-  @see [[Factory]]
-  @see [[MongoDbConnection]]
-*/
-// extends Factory
+//DefaultMongoDbFactory helps creates MongoDb components by their descriptors.
+//See Factory
+//See MongoDbConnection
 type DefaultMongoDbFactory struct {
 	cbuild.Factory
 	Descriptor                  cref.Descriptor
 	MongoDbConnectionDescriptor cref.Descriptor
 }
 
-/*
-  Create a new instance of the factory.
-*/
+// NewDefaultMongoDbFactory are create a new instance of the factory.
+// Return *DefaultMongoDbFactory
 func NewDefaultMongoDbFactory() *DefaultMongoDbFactory {
 	mongoDBFactory := DefaultMongoDbFactory{}
 	mongoDBFactory.Descriptor = *cref.NewDescriptor("pip-services", "factory", "rpc", "default", "1.0")
