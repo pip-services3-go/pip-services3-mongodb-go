@@ -13,7 +13,7 @@ MongoDB persistence has the following configuration properties:
 
 Example:
 ```yaml
-- descriptor: "pip-services-clusters:persistence:file:default:1.0"
+- descriptor: "pip-services-clusters:persistence:mongodb:default:1.0"
   collection: "clusters"
   connection:
     uri: "mongodb://localhost/pipservicestest"
