@@ -39,9 +39,9 @@ go get -u
 
 ## <a name="build"></a> Building
 
-The commons is written in Golang language which is transcompiled into JavaScript.
+The commons is written in Golang language.
 So, if you make changes to the source code you need to compile it before running or committing to github.
-The process will output compiled javascript files into /bin folder.
+The process will output compiled executable files.
 
 ```bash
 go buld
