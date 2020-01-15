@@ -8,7 +8,7 @@ structure.
 
 MongoDB persistence has the following configuration properties:
 - connection(s): object - MongoDB connection properties
-- options: object - (optional) MongoDB connection options. See: http://mongoosejs.com/docs/connections.html for more details.
+- options: object - (optional) MongoDB connection options.
 - debug: boolean - (optional) Enables or disables connection debugging
 
 Example:
