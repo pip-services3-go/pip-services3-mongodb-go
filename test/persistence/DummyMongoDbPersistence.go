@@ -60,7 +60,7 @@ func (c *DummyMongoDbPersistence) Update(correlationId string, item Dummy) (resu
 	return result, err
 }
 
-func (c *DummyMongoDbPersistence) UpdatePartially(correlationId string, id string, data cdata.AnyValueMap) (item Dummy, err error) {
+func (c *DummyMongoDbPersistence) UpdatePartially(correlationId string, id string, data *cdata.AnyValueMap) (item Dummy, err error) {
 	result, err := c.IdentifiableMongoDbPersistence.UpdatePartially(correlationId, id, data)
 
 	if result != nil {
@@ -87,10 +87,10 @@ func (c *DummyMongoDbPersistence) DeleteByIds(correlationId string, ids []string
 	return c.IdentifiableMongoDbPersistence.DeleteByIds(correlationId, convIds)
 }
 
-func (c *DummyMongoDbPersistence) GetPageByFilter(correlationId string, filter cdata.FilterParams, paging cdata.PagingParams) (page DummyPage, err error) {
+func (c *DummyMongoDbPersistence) GetPageByFilter(correlationId string, filter *cdata.FilterParams, paging *cdata.PagingParams) (page *DummyPage, err error) {
 
 	if &filter == nil {
-		filter = *cdata.NewEmptyFilterParams()
+		filter = cdata.NewEmptyFilterParams()
 	}
 
 	key := filter.GetAsNullableString("Key")
@@ -103,7 +103,7 @@ func (c *DummyMongoDbPersistence) GetPageByFilter(correlationId string, filter c
 	sorting := bson.M{"key": -1}
 
 	tempPage, err := c.IdentifiableMongoDbPersistence.GetPageByFilter(correlationId,
-		filterObj, &paging,
+		filterObj, paging,
 		sorting, nil)
 	// Convert to DummyPage
 	dataLen := int64(len(tempPage.Data)) // For full release tempPage and delete this by GC
@@ -111,6 +111,6 @@ func (c *DummyMongoDbPersistence) GetPageByFilter(correlationId string, filter c
 	for i, v := range tempPage.Data {
 		data[i] = v.(Dummy)
 	}
-	page = *NewDummyPage(&dataLen, data)
+	page = NewDummyPage(&dataLen, data)
 	return page, err
 }

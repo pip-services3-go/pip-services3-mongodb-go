@@ -469,7 +469,7 @@ func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item inter
 //	a map with fields to be updated.
 // Returns item interface{}, err error
 // updated item and error, if they are occured
-func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, id interface{}, data cdata.AnyValueMap) (item interface{}, err error) {
+func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, id interface{}, data *cdata.AnyValueMap) (item interface{}, err error) {
 	if id == nil { //data == nil ||
 		return nil, nil
 	}

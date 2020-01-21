@@ -63,7 +63,7 @@ func (c *DummyMapMongoDbPersistence) Update(correlationId string, item map[strin
 	return result, err
 }
 
-func (c *DummyMapMongoDbPersistence) UpdatePartially(correlationId string, id string, data cdata.AnyValueMap) (item map[string]interface{}, err error) {
+func (c *DummyMapMongoDbPersistence) UpdatePartially(correlationId string, id string, data *cdata.AnyValueMap) (item map[string]interface{}, err error) {
 	result, err := c.IdentifiableMongoDbPersistence.UpdatePartially(correlationId, id, data)
 
 	if result != nil {
@@ -91,10 +91,10 @@ func (c *DummyMapMongoDbPersistence) DeleteByIds(correlationId string, ids []str
 	return c.IdentifiableMongoDbPersistence.DeleteByIds(correlationId, convIds)
 }
 
-func (c *DummyMapMongoDbPersistence) GetPageByFilter(correlationId string, filter cdata.FilterParams, paging cdata.PagingParams) (page MapPage, err error) {
+func (c *DummyMapMongoDbPersistence) GetPageByFilter(correlationId string, filter *cdata.FilterParams, paging *cdata.PagingParams) (page *MapPage, err error) {
 
 	if &filter == nil {
-		filter = *cdata.NewEmptyFilterParams()
+		filter = cdata.NewEmptyFilterParams()
 	}
 
 	key := filter.GetAsNullableString("Key")
@@ -106,13 +106,13 @@ func (c *DummyMapMongoDbPersistence) GetPageByFilter(correlationId string, filte
 	}
 	sorting := bson.M{"key": -1}
 
-	tempPage, err := c.IdentifiableMongoDbPersistence.GetPageByFilter(correlationId, filterObj, &paging,
+	tempPage, err := c.IdentifiableMongoDbPersistence.GetPageByFilter(correlationId, filterObj, paging,
 		sorting, nil)
 	dataLen := int64(len(tempPage.Data))
 	data := make([]map[string]interface{}, dataLen)
 	for i, v := range tempPage.Data {
 		data[i] = v.(map[string]interface{})
 	}
-	dataPage := *NewMapPage(&dataLen, data)
+	dataPage := NewMapPage(&dataLen, data)
 	return dataPage, err
 }

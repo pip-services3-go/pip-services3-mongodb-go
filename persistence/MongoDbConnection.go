@@ -53,14 +53,14 @@ References:
 
 */
 type MongoDbConnection struct {
-	defaultConfig cconf.ConfigParams
+	defaultConfig *cconf.ConfigParams
 	Ctx           context.Context
 	// The logger.
-	Logger clog.CompositeLogger
+	Logger *clog.CompositeLogger
 	//   The connection resolver.
-	ConnectionResolver mcon.MongoDbConnectionResolver
+	ConnectionResolver *mcon.MongoDbConnectionResolver
 	//   The configuration options.
-	Options cconf.ConfigParams
+	Options *cconf.ConfigParams
 	//   The MongoDB connection object.
 	Connection *mongodrv.Client
 	//   The MongoDB database name.
@@ -73,18 +73,18 @@ type MongoDbConnection struct {
 // Returns *MongoDbConnection with default config
 func NewMongoDbConnection() (c *MongoDbConnection) {
 	mc := MongoDbConnection{
-		defaultConfig: *cconf.NewConfigParamsFromTuples(
+		defaultConfig: cconf.NewConfigParamsFromTuples(
 			"options.max_pool_size", "2",
 			"options.keep_alive", "0",
 			"options.connect_timeout", "5000",
 			"options.max_page_size", "100",
 		),
 		//The logger.
-		Logger: *clog.NewCompositeLogger(),
+		Logger: clog.NewCompositeLogger(),
 		//The connection resolver.
-		ConnectionResolver: *mcon.NewMongoDbConnectionResolver(),
+		ConnectionResolver: mcon.NewMongoDbConnectionResolver(),
 		// The configuration options.
-		Options: *cconf.NewEmptyConfigParams(),
+		Options: cconf.NewEmptyConfigParams(),
 	}
 	return &mc
 }
@@ -94,9 +94,9 @@ func NewMongoDbConnection() (c *MongoDbConnection) {
 // 	- config  *cconf.ConfigParams
 //  configuration parameters to be set.
 func (c *MongoDbConnection) Configure(config *cconf.ConfigParams) {
-	config = config.SetDefaults(&c.defaultConfig)
+	config = config.SetDefaults(c.defaultConfig)
 	c.ConnectionResolver.Configure(config)
-	c.Options = *c.Options.Override(config.GetSection("options"))
+	c.Options = c.Options.Override(config.GetSection("options"))
 }
 
 // SetReferences are sets references to dependent components.
