@@ -1,9 +1,9 @@
 package build
 
 import (
-	cref "github.com/pip-services3-go/pip-services3-commons-go/v3/refer"
-	cbuild "github.com/pip-services3-go/pip-services3-components-go/v3/build"
-	cmngpersist "github.com/pip-services3-go/pip-services3-mongodb-go/v3/persistence"
+	cref "github.com/pip-services3-go/pip-services3-commons-go/refer"
+	cbuild "github.com/pip-services3-go/pip-services3-components-go/build"
+	cmngpersist "github.com/pip-services3-go/pip-services3-mongodb-go/persistence"
 )
 
 //DefaultMongoDbFactory helps creates MongoDb components by their descriptors.

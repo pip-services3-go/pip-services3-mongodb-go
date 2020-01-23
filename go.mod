@@ -1,4 +1,4 @@
-module github.com/pip-services3-go/pip-services3-mongodb-go/v3
+module github.com/pip-services3-go/pip-services3-mongodb-go
 
 go 1.13
 
@@ -7,9 +7,9 @@ require (
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/go-cmp v0.3.1 // indirect
-	github.com/pip-services3-go/pip-services3-commons-go/v3 v3.0.0
-	github.com/pip-services3-go/pip-services3-components-go/v3 v3.0.0
-	github.com/pip-services3-go/pip-services3-data-go/v3 v3.0.0
+	github.com/pip-services3-go/pip-services3-commons-go v0.0.0-20200122115504-d6c6fb5edd7f
+	github.com/pip-services3-go/pip-services3-components-go v0.0.0-20200123182309-056a0aff0a4a
+	github.com/pip-services3-go/pip-services3-data-go v1.0.0
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/tidwall/pretty v1.0.0 // indirect

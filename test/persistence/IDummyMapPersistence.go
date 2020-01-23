@@ -1,6 +1,6 @@
 package test_persistence
 
-import cdata "github.com/pip-services3-go/pip-services3-commons-go/v3/data"
+import cdata "github.com/pip-services3-go/pip-services3-commons-go/data"
 
 // extends IGetter<DummyMap, String>, IWriter<DummyMap, String>, IPartialUpdater<DummyMap, String> {
 type IDummyMapPersistence interface {

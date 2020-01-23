@@ -1,12 +1,12 @@
 package connect
 
 import (
-	cconf "github.com/pip-services3-go/pip-services3-commons-go/v3/config"
-	cdata "github.com/pip-services3-go/pip-services3-commons-go/v3/data"
-	cerr "github.com/pip-services3-go/pip-services3-commons-go/v3/errors"
-	crefer "github.com/pip-services3-go/pip-services3-commons-go/v3/refer"
-	"github.com/pip-services3-go/pip-services3-components-go/v3/auth"
-	ccon "github.com/pip-services3-go/pip-services3-components-go/v3/connect"
+	cconf "github.com/pip-services3-go/pip-services3-commons-go/config"
+	cdata "github.com/pip-services3-go/pip-services3-commons-go/data"
+	cerr "github.com/pip-services3-go/pip-services3-commons-go/errors"
+	crefer "github.com/pip-services3-go/pip-services3-commons-go/refer"
+	"github.com/pip-services3-go/pip-services3-components-go/auth"
+	ccon "github.com/pip-services3-go/pip-services3-components-go/connect"
 	"strconv"
 	"sync"
 )

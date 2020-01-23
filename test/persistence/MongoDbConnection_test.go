@@ -1,8 +1,8 @@
 package test_persistence
 
 import (
-	cconf "github.com/pip-services3-go/pip-services3-commons-go/v3/config"
-	mngpersist "github.com/pip-services3-go/pip-services3-mongodb-go/v3/persistence"
+	cconf "github.com/pip-services3-go/pip-services3-commons-go/config"
+	mngpersist "github.com/pip-services3-go/pip-services3-mongodb-go/persistence"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"

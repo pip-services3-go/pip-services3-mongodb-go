@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"time"
 
-	cconf "github.com/pip-services3-go/pip-services3-commons-go/v3/config"
-	cdata "github.com/pip-services3-go/pip-services3-commons-go/v3/data"
-	cmpersist "github.com/pip-services3-go/pip-services3-data-go/v3/persistence"
+	cconf "github.com/pip-services3-go/pip-services3-commons-go/config"
+	cdata "github.com/pip-services3-go/pip-services3-commons-go/data"
+	cmpersist "github.com/pip-services3-go/pip-services3-data-go/persistence"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	mngoptions "go.mongodb.org/mongo-driver/mongo/options"

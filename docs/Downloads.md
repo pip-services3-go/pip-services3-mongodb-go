@@ -7,7 +7,7 @@ To use the commons you can either include dependency into your go file:
 
     ...
     import (
-        cpersist "github.com/pip-services3-go/pip-services3-mongodb-go/v3/persistence"
+        cpersist "github.com/pip-services3-go/pip-services3-mongodb-go/persistence"
     )
 
 ``` 

@@ -3,10 +3,10 @@ package persistence
 import (
 	"reflect"
 
-	cconf "github.com/pip-services3-go/pip-services3-commons-go/v3/config"
-	cerror "github.com/pip-services3-go/pip-services3-commons-go/v3/errors"
-	crefer "github.com/pip-services3-go/pip-services3-commons-go/v3/refer"
-	clog "github.com/pip-services3-go/pip-services3-components-go/v3/log"
+	cconf "github.com/pip-services3-go/pip-services3-commons-go/config"
+	cerror "github.com/pip-services3-go/pip-services3-commons-go/errors"
+	crefer "github.com/pip-services3-go/pip-services3-commons-go/refer"
+	clog "github.com/pip-services3-go/pip-services3-components-go/log"
 	mongodrv "go.mongodb.org/mongo-driver/mongo"
 	mongoopt "go.mongodb.org/mongo-driver/mongo/options"
 )
