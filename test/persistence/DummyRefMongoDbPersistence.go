@@ -24,8 +24,8 @@ func (c *DummyRefMongoDbPersistence) Create(correlationId string, item *Dummy) (
 	value, err := c.IdentifiableMongoDbPersistence.Create(correlationId, item)
 
 	if value != nil {
-		val, _ := value.(Dummy)
-		result = &val
+		val, _ := value.(*Dummy)
+		result = val
 	}
 	return result, err
 }
@@ -38,8 +38,8 @@ func (c *DummyRefMongoDbPersistence) GetListByIds(correlationId string, ids []st
 	result, err := c.IdentifiableMongoDbPersistence.GetListByIds(correlationId, convIds)
 	items = make([]*Dummy, len(result))
 	for i, v := range result {
-		val, _ := v.(Dummy)
-		items[i] = &val
+		val, _ := v.(*Dummy)
+		items[i] = val
 	}
 	return items, err
 }
@@ -47,8 +47,8 @@ func (c *DummyRefMongoDbPersistence) GetListByIds(correlationId string, ids []st
 func (c *DummyRefMongoDbPersistence) GetOneById(correlationId string, id string) (item *Dummy, err error) {
 	result, err := c.IdentifiableMongoDbPersistence.GetOneById(correlationId, id)
 	if result != nil {
-		val, _ := result.(Dummy)
-		item = &val
+		val, _ := result.(*Dummy)
+		item = val
 	}
 	return item, err
 }
@@ -56,8 +56,8 @@ func (c *DummyRefMongoDbPersistence) GetOneById(correlationId string, id string)
 func (c *DummyRefMongoDbPersistence) Update(correlationId string, item *Dummy) (result *Dummy, err error) {
 	value, err := c.IdentifiableMongoDbPersistence.Update(correlationId, item)
 	if value != nil {
-		val, _ := value.(Dummy)
-		result = &val
+		val, _ := value.(*Dummy)
+		result = val
 	}
 	return result, err
 }
@@ -66,8 +66,8 @@ func (c *DummyRefMongoDbPersistence) UpdatePartially(correlationId string, id st
 	result, err := c.IdentifiableMongoDbPersistence.UpdatePartially(correlationId, id, data)
 
 	if result != nil {
-		val, _ := result.(Dummy)
-		item = &val
+		val, _ := result.(*Dummy)
+		item = val
 	}
 	return item, err
 }
@@ -75,8 +75,8 @@ func (c *DummyRefMongoDbPersistence) UpdatePartially(correlationId string, id st
 func (c *DummyRefMongoDbPersistence) DeleteById(correlationId string, id string) (item *Dummy, err error) {
 	result, err := c.IdentifiableMongoDbPersistence.DeleteById(correlationId, id)
 	if result != nil {
-		val, _ := result.(Dummy)
-		item = &val
+		val, _ := result.(*Dummy)
+		item = val
 	}
 	return item, err
 }
@@ -110,8 +110,8 @@ func (c *DummyRefMongoDbPersistence) GetPageByFilter(correlationId string, filte
 	dataLen := int64(len(tempPage.Data)) // For full release tempPage and delete this by GC
 	data := make([]*Dummy, dataLen)
 	for i := range tempPage.Data {
-		temp := tempPage.Data[i].(Dummy)
-		data[i] = &temp
+		temp := tempPage.Data[i].(*Dummy)
+		data[i] = temp
 	}
 	page = NewDummyRefPage(&dataLen, data)
 	return page, err

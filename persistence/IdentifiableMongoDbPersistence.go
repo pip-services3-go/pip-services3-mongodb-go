@@ -206,8 +206,9 @@ func (c *IdentifiableMongoDbPersistence) GetPageByFilter(correlationId string, f
 		if curErr != nil {
 			continue
 		}
-		item := docPointer.Elem().Interface()
-		c.ConvertToPublic(&item)
+		// item := docPointer.Elem().Interface()
+		// c.ConvertToPublic(&item)
+		item := c.getConvResult(docPointer, c.Prototype)
 		items = append(items, item)
 	}
 	if items != nil {
@@ -260,10 +261,10 @@ func (c *IdentifiableMongoDbPersistence) GetListByFilter(correlationId string, f
 		if curErr != nil {
 			continue
 		}
-		item := docPointer.Elem().Interface()
 
-		// convert to public for map
-		c.ConvertToPublic(&item)
+		// item := docPointer.Elem().Interface()
+		// c.ConvertToPublic(&item)
+		item := c.getConvResult(docPointer, c.Prototype)
 
 		items = append(items, item)
 	}
@@ -307,8 +308,9 @@ func (c *IdentifiableMongoDbPersistence) GetOneById(correlationId string, id int
 		return nil, ferr
 	}
 	c.Logger.Trace(correlationId, "Retrieved from %s by id = %s", c.CollectionName, id)
-	item = docPointer.Elem().Interface()
-	c.ConvertToPublic(&item)
+	// item = docPointer.Elem().Interface()
+	// c.ConvertToPublic(&item)
+	item = c.getConvResult(docPointer, c.Prototype)
 	return item, nil
 }
 
@@ -347,8 +349,9 @@ func (c *IdentifiableMongoDbPersistence) GetOneRandom(correlationId string, filt
 	if err != nil {
 		return nil, err
 	}
-	item = docPointer.Elem().Interface()
-	c.ConvertToPublic(&item)
+	// item = docPointer.Elem().Interface()
+	// c.ConvertToPublic(&item)
+	item = c.getConvResult(docPointer, c.Prototype)
 	return item, nil
 }
 
@@ -375,6 +378,12 @@ func (c *IdentifiableMongoDbPersistence) Create(correlationId string, item inter
 		return nil, insErr
 	}
 	c.Logger.Trace(correlationId, "Created in %s with id = %s", c.Collection, insRes.InsertedID)
+
+	if c.Prototype.Kind() == reflect.Ptr {
+		newPtr := reflect.New(c.Prototype.Elem())
+		newPtr.Elem().Set(reflect.ValueOf(newItem))
+		return newPtr.Interface(), nil
+	}
 	return newItem, nil
 }
 
@@ -416,8 +425,9 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 		}
 		return nil, err
 	}
-	item = docPointer.Elem().Interface()
-	c.ConvertToPublic(&item)
+	// item = docPointer.Elem().Interface()
+	// c.ConvertToPublic(&item)
+	item = c.getConvResult(docPointer, c.Prototype)
 	return item, nil
 }
 
@@ -454,8 +464,9 @@ func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item inter
 		}
 		return nil, err
 	}
-	item = docPointer.Elem().Interface()
-	c.ConvertToPublic(&item)
+	// item = docPointer.Elem().Interface()
+	// c.ConvertToPublic(&item)
+	item = c.getConvResult(docPointer, c.Prototype)
 	return item, nil
 }
 
@@ -495,8 +506,9 @@ func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, i
 		}
 		return nil, err
 	}
-	item = docPointer.Elem().Interface()
-	c.ConvertToPublic(&item)
+	// item = docPointer.Elem().Interface()
+	// c.ConvertToPublic(&item)
+	item = c.getConvResult(docPointer, c.Prototype)
 	return item, nil
 }
 
@@ -523,8 +535,9 @@ func (c *IdentifiableMongoDbPersistence) DeleteById(correlationId string, id int
 		}
 		return nil, err
 	}
-	item = docPointer.Elem().Interface()
-	c.ConvertToPublic(&item)
+	// item = docPointer.Elem().Interface()
+	// c.ConvertToPublic(&item)
+	item = c.getConvResult(docPointer, c.Prototype)
 	return item, nil
 }
 
@@ -568,4 +581,13 @@ func getProtoPtr(proto reflect.Type) reflect.Value {
 		proto = proto.Elem()
 	}
 	return reflect.New(proto)
+}
+
+func (c *IdentifiableMongoDbPersistence) getConvResult(docPointer reflect.Value, proto reflect.Type) interface{} {
+	item := docPointer.Elem().Interface()
+	c.ConvertToPublic(&item)
+	if proto.Kind() == reflect.Ptr {
+		return docPointer.Interface()
+	}
+	return item
 }

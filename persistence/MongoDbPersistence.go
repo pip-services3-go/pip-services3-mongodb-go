@@ -277,10 +277,8 @@ func (c *MongoDbPersistence) ConvertFromPublic(item *interface{}) {
 	}
 
 	if reflect.TypeOf(value).Kind() == reflect.Struct {
-
 		return
 	}
-
 	panic("ConvertFromPublic:Error! Item must to be a map[string]interface{} or struct!")
 }
 
@@ -304,10 +302,8 @@ func (c *MongoDbPersistence) ConvertToPublic(item *interface{}) {
 	}
 
 	if reflect.TypeOf(value).Kind() == reflect.Struct {
-
 		return
 	}
-
 	panic("ConvertToPublic:Error! Item must to be a map[string]interface{} or struct!")
 }
 
