@@ -201,14 +201,14 @@ func (c *IdentifiableMongoDbPersistence) GetPageByFilter(correlationId string, f
 		return page, ferr
 	}
 	for cursor.Next(c.Connection.Ctx) {
-		docPointer := getProtoPtr(c.Prototype)
+		docPointer := GetProtoPtr(c.Prototype)
 		curErr := cursor.Decode(docPointer.Interface())
 		if curErr != nil {
 			continue
 		}
 		// item := docPointer.Elem().Interface()
 		// c.ConvertToPublic(&item)
-		item := c.getConvResult(docPointer, c.Prototype)
+		item := c.GetConvResult(docPointer, c.Prototype)
 		items = append(items, item)
 	}
 	if items != nil {
@@ -256,7 +256,7 @@ func (c *IdentifiableMongoDbPersistence) GetListByFilter(correlationId string, f
 	}
 
 	for cursor.Next(c.Connection.Ctx) {
-		docPointer := getProtoPtr(c.Prototype)
+		docPointer := GetProtoPtr(c.Prototype)
 		curErr := cursor.Decode(docPointer.Interface())
 		if curErr != nil {
 			continue
@@ -264,7 +264,7 @@ func (c *IdentifiableMongoDbPersistence) GetListByFilter(correlationId string, f
 
 		// item := docPointer.Elem().Interface()
 		// c.ConvertToPublic(&item)
-		item := c.getConvResult(docPointer, c.Prototype)
+		item := c.GetConvResult(docPointer, c.Prototype)
 
 		items = append(items, item)
 	}
@@ -298,7 +298,7 @@ func (c *IdentifiableMongoDbPersistence) GetListByIds(correlationId string, ids 
 // - callback          callback function that receives data item or error.
 func (c *IdentifiableMongoDbPersistence) GetOneById(correlationId string, id interface{}) (item interface{}, err error) {
 	filter := bson.M{"_id": id}
-	docPointer := getProtoPtr(c.Prototype)
+	docPointer := GetProtoPtr(c.Prototype)
 	foRes := c.Collection.FindOne(c.Connection.Ctx, filter)
 	ferr := foRes.Decode(docPointer.Interface())
 	if ferr != nil {
@@ -310,7 +310,7 @@ func (c *IdentifiableMongoDbPersistence) GetOneById(correlationId string, id int
 	c.Logger.Trace(correlationId, "Retrieved from %s by id = %s", c.CollectionName, id)
 	// item = docPointer.Elem().Interface()
 	// c.ConvertToPublic(&item)
-	item = c.getConvResult(docPointer, c.Prototype)
+	item = c.GetConvResult(docPointer, c.Prototype)
 	return item, nil
 }
 
@@ -344,14 +344,14 @@ func (c *IdentifiableMongoDbPersistence) GetOneRandom(correlationId string, filt
 	if fndErr != nil {
 		return nil, fndErr
 	}
-	docPointer := getProtoPtr(c.Prototype)
+	docPointer := GetProtoPtr(c.Prototype)
 	err = cursor.Decode(docPointer.Interface())
 	if err != nil {
 		return nil, err
 	}
 	// item = docPointer.Elem().Interface()
 	// c.ConvertToPublic(&item)
-	item = c.getConvResult(docPointer, c.Prototype)
+	item = c.GetConvResult(docPointer, c.Prototype)
 	return item, nil
 }
 
@@ -417,7 +417,7 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 		return nil, frRes.Err()
 	}
 	c.Logger.Trace(correlationId, "Set in %s with id = %s", c.CollectionName, id)
-	docPointer := getProtoPtr(c.Prototype)
+	docPointer := GetProtoPtr(c.Prototype)
 	err = frRes.Decode(docPointer.Interface())
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -427,7 +427,7 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 	}
 	// item = docPointer.Elem().Interface()
 	// c.ConvertToPublic(&item)
-	item = c.getConvResult(docPointer, c.Prototype)
+	item = c.GetConvResult(docPointer, c.Prototype)
 	return item, nil
 }
 
@@ -456,7 +456,7 @@ func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item inter
 		return nil, fuRes.Err()
 	}
 	c.Logger.Trace(correlationId, "Updated in %s with id = %s", c.CollectionName, id)
-	docPointer := getProtoPtr(c.Prototype)
+	docPointer := GetProtoPtr(c.Prototype)
 	err = fuRes.Decode(docPointer.Interface())
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -466,7 +466,7 @@ func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item inter
 	}
 	// item = docPointer.Elem().Interface()
 	// c.ConvertToPublic(&item)
-	item = c.getConvResult(docPointer, c.Prototype)
+	item = c.GetConvResult(docPointer, c.Prototype)
 	return item, nil
 }
 
@@ -498,7 +498,7 @@ func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, i
 		return nil, fuRes.Err()
 	}
 	c.Logger.Trace(correlationId, "Updated partially in %s with id = %s", c.Collection, id)
-	docPointer := getProtoPtr(c.Prototype)
+	docPointer := GetProtoPtr(c.Prototype)
 	err = fuRes.Decode(docPointer.Interface())
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -508,7 +508,7 @@ func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, i
 	}
 	// item = docPointer.Elem().Interface()
 	// c.ConvertToPublic(&item)
-	item = c.getConvResult(docPointer, c.Prototype)
+	item = c.GetConvResult(docPointer, c.Prototype)
 	return item, nil
 }
 
@@ -527,7 +527,7 @@ func (c *IdentifiableMongoDbPersistence) DeleteById(correlationId string, id int
 		return nil, fdRes.Err()
 	}
 	c.Logger.Trace(correlationId, "Deleted from %s with id = %s", c.CollectionName, id)
-	docPointer := getProtoPtr(c.Prototype)
+	docPointer := GetProtoPtr(c.Prototype)
 	err = fdRes.Decode(docPointer.Interface())
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -537,7 +537,7 @@ func (c *IdentifiableMongoDbPersistence) DeleteById(correlationId string, id int
 	}
 	// item = docPointer.Elem().Interface()
 	// c.ConvertToPublic(&item)
-	item = c.getConvResult(docPointer, c.Prototype)
+	item = c.GetConvResult(docPointer, c.Prototype)
 	return item, nil
 }
 
@@ -576,14 +576,14 @@ func (c *IdentifiableMongoDbPersistence) DeleteByIds(correlationId string, ids [
 }
 
 // service function for return pointer on new prototype object for unmarshaling
-func getProtoPtr(proto reflect.Type) reflect.Value {
+func GetProtoPtr(proto reflect.Type) reflect.Value {
 	if proto.Kind() == reflect.Ptr {
 		proto = proto.Elem()
 	}
 	return reflect.New(proto)
 }
 
-func (c *IdentifiableMongoDbPersistence) getConvResult(docPointer reflect.Value, proto reflect.Type) interface{} {
+func (c *IdentifiableMongoDbPersistence) GetConvResult(docPointer reflect.Value, proto reflect.Type) interface{} {
 	item := docPointer.Elem().Interface()
 	c.ConvertToPublic(&item)
 	if proto.Kind() == reflect.Ptr {
