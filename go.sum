@@ -31,6 +31,8 @@ github.com/pip-services3-go/pip-services3-components-go v1.0.0 h1:v2aJdHYohzNg50
 github.com/pip-services3-go/pip-services3-components-go v1.0.0/go.mod h1:Me/KFWw/xeMML89twlGdFKqnvprgt2qyi8xAV1+XKGs=
 github.com/pip-services3-go/pip-services3-data-go v1.0.0 h1:hyk/bMtzxVlZuhSUYMIj9kEW+CXJ28gYpsq9Q+rK6lk=
 github.com/pip-services3-go/pip-services3-data-go v1.0.0/go.mod h1:DExl49aIGpYj7P78WAdfL6PuKZ3GbQ5OTeVwD19n2lY=
+github.com/pip-services3-go/pip-services3-data-go v1.0.1 h1:p9egUgg6CJ/viDH+QQ+WrgHOY8ROPspt3pRkUd7mROU=
+github.com/pip-services3-go/pip-services3-data-go v1.0.1/go.mod h1:GlF516tSRHiEpQP5370Ttzl7eUEvH5B53xRS6/3r0cQ=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
