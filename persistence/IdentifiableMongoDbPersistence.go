@@ -201,7 +201,7 @@ func (c *IdentifiableMongoDbPersistence) GetPageByFilter(correlationId string, f
 		return page, ferr
 	}
 	for cursor.Next(c.Connection.Ctx) {
-		docPointer := GetProtoPtr(c.Prototype)
+		docPointer := c.GetProtoPtr()
 		curErr := cursor.Decode(docPointer.Interface())
 		if curErr != nil {
 			continue
@@ -256,7 +256,7 @@ func (c *IdentifiableMongoDbPersistence) GetListByFilter(correlationId string, f
 	}
 
 	for cursor.Next(c.Connection.Ctx) {
-		docPointer := GetProtoPtr(c.Prototype)
+		docPointer := c.GetProtoPtr()
 		curErr := cursor.Decode(docPointer.Interface())
 		if curErr != nil {
 			continue
@@ -298,7 +298,7 @@ func (c *IdentifiableMongoDbPersistence) GetListByIds(correlationId string, ids 
 // - callback          callback function that receives data item or error.
 func (c *IdentifiableMongoDbPersistence) GetOneById(correlationId string, id interface{}) (item interface{}, err error) {
 	filter := bson.M{"_id": id}
-	docPointer := GetProtoPtr(c.Prototype)
+	docPointer := c.GetProtoPtr()
 	foRes := c.Collection.FindOne(c.Connection.Ctx, filter)
 	ferr := foRes.Decode(docPointer.Interface())
 	if ferr != nil {
@@ -344,7 +344,7 @@ func (c *IdentifiableMongoDbPersistence) GetOneRandom(correlationId string, filt
 	if fndErr != nil {
 		return nil, fndErr
 	}
-	docPointer := GetProtoPtr(c.Prototype)
+	docPointer := c.GetProtoPtr()
 	err = cursor.Decode(docPointer.Interface())
 	if err != nil {
 		return nil, err
@@ -417,7 +417,7 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 		return nil, frRes.Err()
 	}
 	c.Logger.Trace(correlationId, "Set in %s with id = %s", c.CollectionName, id)
-	docPointer := GetProtoPtr(c.Prototype)
+	docPointer := c.GetProtoPtr()
 	err = frRes.Decode(docPointer.Interface())
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -456,7 +456,7 @@ func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item inter
 		return nil, fuRes.Err()
 	}
 	c.Logger.Trace(correlationId, "Updated in %s with id = %s", c.CollectionName, id)
-	docPointer := GetProtoPtr(c.Prototype)
+	docPointer := c.GetProtoPtr()
 	err = fuRes.Decode(docPointer.Interface())
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -498,7 +498,7 @@ func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, i
 		return nil, fuRes.Err()
 	}
 	c.Logger.Trace(correlationId, "Updated partially in %s with id = %s", c.Collection, id)
-	docPointer := GetProtoPtr(c.Prototype)
+	docPointer := c.GetProtoPtr()
 	err = fuRes.Decode(docPointer.Interface())
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -527,7 +527,7 @@ func (c *IdentifiableMongoDbPersistence) DeleteById(correlationId string, id int
 		return nil, fdRes.Err()
 	}
 	c.Logger.Trace(correlationId, "Deleted from %s with id = %s", c.CollectionName, id)
-	docPointer := GetProtoPtr(c.Prototype)
+	docPointer := c.GetProtoPtr()
 	err = fdRes.Decode(docPointer.Interface())
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -576,7 +576,8 @@ func (c *IdentifiableMongoDbPersistence) DeleteByIds(correlationId string, ids [
 }
 
 // service function for return pointer on new prototype object for unmarshaling
-func GetProtoPtr(proto reflect.Type) reflect.Value {
+func (c *IdentifiableMongoDbPersistence) GetProtoPtr() reflect.Value {
+	proto := c.Prototype
 	if proto.Kind() == reflect.Ptr {
 		proto = proto.Elem()
 	}
