@@ -5,7 +5,6 @@ Configuration structure follows the
 structure. 
 
 ### <a name="persistence_mongodb"></a> MongoDB
-
 MongoDB persistence has the following configuration properties:
 - connection(s): object - MongoDB connection properties
 - options: object - (optional) MongoDB connection options.

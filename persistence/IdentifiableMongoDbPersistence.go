@@ -34,7 +34,7 @@ Configuration parameters:
   - port:                      port number (default: 27017)
   - uri:                       resource URI or connection string with all parameters in it
 - credential(s):
-  - store_key:                 (optional) a key to retrieve the credentials from ICredentialStore]]
+  - store_key:                 (optional) a key to retrieve the credentials from ICredentialStore
   - username:                  (optional) user name
   - password:                  (optional) user password
 - options:
