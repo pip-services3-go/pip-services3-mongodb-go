@@ -115,3 +115,19 @@ func (c *DummyMongoDbPersistence) GetPageByFilter(correlationId string, filter *
 	page = NewDummyPage(&dataLen, data)
 	return page, err
 }
+
+func (c *DummyMongoDbPersistence) GetCountByFilter(correlationId string, filter *cdata.FilterParams) (count int64, err error) {
+
+	if &filter == nil {
+		filter = cdata.NewEmptyFilterParams()
+	}
+
+	key := filter.GetAsNullableString("Key")
+	var filterObj bson.M
+	if *key != "" {
+		filterObj = bson.M{"key": *key}
+	} else {
+		filterObj = bson.M{}
+	}
+	return c.IdentifiableMongoDbPersistence.GetCountByFilter(correlationId, filterObj)
+}

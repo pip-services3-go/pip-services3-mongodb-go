@@ -592,3 +592,22 @@ func (c *IdentifiableMongoDbPersistence) GetConvResult(docPointer reflect.Value,
 	}
 	return item
 }
+
+// GetCountByFilter is gets a count of data items retrieved by a given filter.
+// This method shall be called by a func (c *IdentifiableMongoDbPersistence) GetCountByFilter method from child type that
+// receives FilterParams and converts them into a filter function.
+// Parameters:
+// 	- correlationId  string
+//   (optional) transaction id to Trace execution through call chain.
+//  - filter interface{}
+// Returns count int, err error
+// a data count or error, if they are occured
+func (c *IdentifiableMongoDbPersistence) GetCountByFilter(correlationId string, filter interface{}) (count int64, err error) {
+
+	// Configure options
+	var options mngoptions.CountOptions
+	count = 0
+	count, err = c.Collection.CountDocuments(c.Connection.Ctx, filter, &options)
+	c.Logger.Trace(correlationId, "Find %d items in %s", count, c.CollectionName)
+	return count, err
+}

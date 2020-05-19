@@ -8,8 +8,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-// extends IdentifiableMongoDbPersistence<DummyMap, string>
-// implements IDummyMapPersistence {
 type DummyMapMongoDbPersistence struct {
 	mngpersist.IdentifiableMongoDbPersistence
 }
@@ -115,4 +113,20 @@ func (c *DummyMapMongoDbPersistence) GetPageByFilter(correlationId string, filte
 	}
 	dataPage := NewMapPage(&dataLen, data)
 	return dataPage, err
+}
+
+func (c *DummyMapMongoDbPersistence) GetCountByFilter(correlationId string, filter *cdata.FilterParams) (count int64, err error) {
+
+	if &filter == nil {
+		filter = cdata.NewEmptyFilterParams()
+	}
+
+	key := filter.GetAsNullableString("Key")
+	var filterObj bson.M
+	if *key != "" {
+		filterObj = bson.M{"key": *key}
+	} else {
+		filterObj = bson.M{}
+	}
+	return c.IdentifiableMongoDbPersistence.GetCountByFilter(correlationId, filterObj)
 }

@@ -12,4 +12,5 @@ type IDummyMapPersistence interface {
 	UpdatePartially(correlationId string, id string, data *cdata.AnyValueMap) (item map[string]interface{}, err error)
 	DeleteById(correlationId string, id string) (item map[string]interface{}, err error)
 	DeleteByIds(correlationId string, ids []string) (err error)
+	GetCountByFilter(correlationId string, filter *cdata.FilterParams) (count int64, err error)
 }
