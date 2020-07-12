@@ -1,13 +1,18 @@
 package persistence
 
 import (
+	"math/rand"
 	"reflect"
+	"time"
 
 	cconf "github.com/pip-services3-go/pip-services3-commons-go/config"
+	cdata "github.com/pip-services3-go/pip-services3-commons-go/data"
 	cerror "github.com/pip-services3-go/pip-services3-commons-go/errors"
 	crefer "github.com/pip-services3-go/pip-services3-commons-go/refer"
 	clog "github.com/pip-services3-go/pip-services3-components-go/log"
+	cmpersist "github.com/pip-services3-go/pip-services3-data-go/persistence"
 	mongodrv "go.mongodb.org/mongo-driver/mongo"
+	mngoptions "go.mongodb.org/mongo-driver/mongo/options"
 	mongoopt "go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -130,7 +135,19 @@ Configuration parameters:
 		...
 	}
     fmt.Println(item)                   // Result: { name: "ABC" }
+    ("123", "ABC")
+	if getErr != nil {
+		...
+	}
+    fmt.Println(item)                   // Result: { name: "ABC" }
+
+    ("123", "ABC")
+	if getErr != nil {
+		...
+	}
+    fmt.Println(item)                   // Result: { name: "ABC" }
 */
+
 type MongoDbPersistence struct {
 	defaultConfig cconf.ConfigParams
 
@@ -140,6 +157,7 @@ type MongoDbPersistence struct {
 	localConnection bool
 	indexes         []mongodrv.IndexModel
 	Prototype       reflect.Type
+	maxPageSize int32
 
 	// The dependency resolver.
 	DependencyResolver crefer.DependencyResolver
@@ -414,4 +432,239 @@ func (c *MongoDbPersistence) Clear(correlationId string) error {
 		return cerror.NewConnectionError(correlationId, "CLEAR_FAILED", "Clear collection failed.").WithCause(err)
 	}
 	return nil
+}
+
+// GetPageByFilter is gets a page of data items retrieved by a given filter and sorted according to sort parameters.
+// This method shall be called by a func (c *IdentifiableMongoDbPersistence) GetPageByFilter method from child type that
+// receives FilterParams and converts them into a filter function.
+// Parameters:
+// 	- correlationId  string
+//   (optional) transaction id to Trace execution through call chain.
+//  - filter interface{}
+//  (optional) a filter JSON object
+//  - paging *cdata.PagingParams
+//  (optional) paging parameters
+//  - sort interface{}
+//  (optional) sorting BSON object
+//  - select  interface{}
+//  (optional) projection BSON object
+// Returns page cdata.DataPage, err error
+// a data page or error, if they are occured
+func (c *MongoDbPersistence) GetPageByFilter(correlationId string, filter interface{}, paging *cdata.PagingParams,
+	sort interface{}, sel interface{}) (page cdata.DataPage, err error) {
+	// Adjust max item count based on configuration
+	if paging == nil {
+		paging = cdata.NewEmptyPagingParams()
+	}
+	skip := paging.GetSkip(-1)
+	take := paging.GetTake((int64)(c.maxPageSize))
+	pagingEnabled := paging.Total
+	// Configure options
+	var options mngoptions.FindOptions
+	if skip >= 0 {
+		options.Skip = &skip
+	}
+	options.Limit = &take
+	if sort != nil {
+		options.Sort = sort
+	}
+	if sel != nil {
+		options.Projection = sel
+	}
+	cursor, ferr := c.Collection.Find(c.Connection.Ctx, filter, &options)
+	items := make([]interface{}, 0, 1)
+	if ferr != nil {
+		var total int64 = 0
+		page = *cdata.NewDataPage(&total, items)
+		return page, ferr
+	}
+	for cursor.Next(c.Connection.Ctx) {
+		docPointer := c.GetProtoPtr()
+		curErr := cursor.Decode(docPointer.Interface())
+		if curErr != nil {
+			continue
+		}
+		// item := docPointer.Elem().Interface()
+		// c.ConvertToPublic(&item)
+		item := c.GetConvResult(docPointer, c.Prototype)
+		items = append(items, item)
+	}
+	if items != nil {
+		c.Logger.Trace(correlationId, "Retrieved %d from %s", len(items), c.CollectionName)
+	}
+	if pagingEnabled {
+		docCount, _ := c.Collection.CountDocuments(c.Connection.Ctx, filter)
+		page = *cdata.NewDataPage(&docCount, items)
+	} else {
+		var total int64 = 0
+		page = *cdata.NewDataPage(&total, items)
+	}
+	return page, nil
+}
+
+// GetListByFilter is gets a list of data items retrieved by a given filter and sorted according to sort parameters.
+// This method shall be called by a func (c *IdentifiableMongoDbPersistence) GetListByFilter method from child type that
+// receives FilterParams and converts them into a filter function.
+// Parameters:
+// 	- correlationId	string
+// 	(optional) transaction id to Trace execution through call chain.
+// 	- filter interface{}
+//	(optional) a filter BSON object
+// 	- sort interface{}
+//	(optional) sorting BSON object
+// 	- select interface{}
+//	(optional) projection BSON object
+// Returns items []interface{}, err error
+// data list and error, if they are ocurred
+func (c *MongoDbPersistence) GetListByFilter(correlationId string, filter interface{}, sort interface{}, sel interface{}) (items []interface{}, err error) {
+
+	// Configure options
+	var options mngoptions.FindOptions
+
+	if sort != nil {
+		options.Sort = sort
+	}
+	if sel != nil {
+		options.Projection = sel
+	}
+
+	cursor, ferr := c.Collection.Find(c.Connection.Ctx, filter, &options)
+	if ferr != nil {
+		return nil, ferr
+	}
+
+	for cursor.Next(c.Connection.Ctx) {
+		docPointer := c.GetProtoPtr()
+		curErr := cursor.Decode(docPointer.Interface())
+		if curErr != nil {
+			continue
+		}
+
+		// item := docPointer.Elem().Interface()
+		// c.ConvertToPublic(&item)
+		item := c.GetConvResult(docPointer, c.Prototype)
+
+		items = append(items, item)
+	}
+
+	if items != nil {
+		c.Logger.Trace(correlationId, "Retrieved %d from %s", len(items), c.CollectionName)
+	}
+	return items, nil
+}
+
+// GetOneRandom is gets a random item from items that match to a given filter.
+// This method shall be called by a func (c *IdentifiableMongoDbPersistence) getOneRandom method from child class that
+// receives FilterParams and converts them into a filter function.
+// Parameters:
+// 	- correlationId string
+//	(optional) transaction id to Trace execution through call chain.
+// - filter interface{}
+// (optional) a filter BSON object
+// Returns: item interface{}, err error
+// random item and error, if theq are occured
+func (c *MongoDbPersistence) GetOneRandom(correlationId string, filter interface{}) (item interface{}, err error) {
+
+	docCount, cntErr := c.Collection.CountDocuments(c.Connection.Ctx, filter)
+	if cntErr != nil {
+		return nil, cntErr
+	}
+	var options mngoptions.FindOptions
+	rand.Seed(time.Now().UnixNano())
+	var itemNum int64 = rand.Int63n(docCount)
+	var itemLim int64 = 1
+
+	if itemNum < 0 {
+		itemNum = 0
+	}
+	options.Skip = &itemNum
+	options.Limit = &itemLim
+	cursor, fndErr := c.Collection.Find(c.Connection.Ctx, filter, &options)
+	if fndErr != nil {
+		return nil, fndErr
+	}
+	docPointer := c.GetProtoPtr()
+	err = cursor.Decode(docPointer.Interface())
+	if err != nil {
+		return nil, err
+	}
+	// item = docPointer.Elem().Interface()
+	// c.ConvertToPublic(&item)
+	item = c.GetConvResult(docPointer, c.Prototype)
+	return item, nil
+}
+
+
+// Create was creates a data item.
+// Parameters:
+// 	- correlation_id string
+//	(optional) transaction id to Trace execution through call chain.
+// 	- item interface{}
+// an item to be created.
+// Returns result interface{}, err error
+// created item and error, if they are occured
+func (c *MongoDbPersistence) Create(correlationId string, item interface{}) (result interface{}, err error) {
+	if item == nil {
+		return nil, nil
+	}
+	var newItem interface{}
+	newItem = cmpersist.CloneObject(item)
+	// Assign unique id if not exist
+	c.ConvertFromPublic(&newItem)
+	insRes, insErr := c.Collection.InsertOne(c.Connection.Ctx, newItem)
+	c.ConvertToPublic(&newItem)
+	if insErr != nil {
+		return nil, insErr
+	}
+	c.Logger.Trace(correlationId, "Created in %s with id = %s", c.Collection, insRes.InsertedID)
+
+	if c.Prototype.Kind() == reflect.Ptr {
+		newPtr := reflect.New(c.Prototype.Elem())
+		newPtr.Elem().Set(reflect.ValueOf(newItem))
+		return newPtr.Interface(), nil
+	}
+	return newItem, nil
+}
+
+// DeleteByFilter is deletes data items that match to a given filter.
+// This method shall be called by a func (c *IdentifiableMongoDbPersistence) deleteByFilter method from child class that
+// receives FilterParams and converts them into a filter function.
+// Parameters:
+// 	- correlationId  string
+//  (optional) transaction id to Trace execution through call chain.
+// 	- filter  interface{}
+//	(optional) a filter BSON object.
+// Return error
+// error or nil for success.
+func (c *MongoDbPersistence) DeleteByFilter(correlationId string, filter interface{}) error {
+	delRes, delErr := c.Collection.DeleteMany(c.Connection.Ctx, filter)
+	var count = delRes.DeletedCount
+	if delErr != nil {
+		return delErr
+	}
+	c.Logger.Trace(correlationId, "Deleted %d items from %s", count, c.Collection)
+	return nil
+}
+
+
+
+
+
+
+// service function for return pointer on new prototype object for unmarshaling
+func (c *MongoDbPersistence) GetProtoPtr() reflect.Value {
+	proto := c.Prototype
+	if proto.Kind() == reflect.Ptr {
+		proto = proto.Elem()
+	}
+	return reflect.New(proto)
+}
+
+func (c *MongoDbPersistence) GetConvResult(docPointer reflect.Value, proto reflect.Type) interface{} {
+	item := docPointer.Elem().Interface()
+	c.ConvertToPublic(&item)
+	if proto.Kind() == reflect.Ptr {
+		return docPointer.Interface()
+	}
+	return item
 }
