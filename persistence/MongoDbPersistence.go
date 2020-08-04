@@ -451,7 +451,7 @@ func (c *MongoDbPersistence) Clear(correlationId string) error {
 // Returns page cdata.DataPage, err error
 // a data page or error, if they are occured
 func (c *MongoDbPersistence) GetPageByFilter(correlationId string, filter interface{}, paging *cdata.PagingParams,
-	sort interface{}, sel interface{}) (page cdata.DataPage, err error) {
+	sort interface{}, sel interface{}) (page *cdata.DataPage, err error) {
 	// Adjust max item count based on configuration
 	if paging == nil {
 		paging = cdata.NewEmptyPagingParams()
@@ -475,7 +475,7 @@ func (c *MongoDbPersistence) GetPageByFilter(correlationId string, filter interf
 	items := make([]interface{}, 0, 1)
 	if ferr != nil {
 		var total int64 = 0
-		page = *cdata.NewDataPage(&total, items)
+		page = cdata.NewDataPage(&total, items)
 		return page, ferr
 	}
 	for cursor.Next(c.Connection.Ctx) {
@@ -494,10 +494,10 @@ func (c *MongoDbPersistence) GetPageByFilter(correlationId string, filter interf
 	}
 	if pagingEnabled {
 		docCount, _ := c.Collection.CountDocuments(c.Connection.Ctx, filter)
-		page = *cdata.NewDataPage(&docCount, items)
+		page = cdata.NewDataPage(&docCount, items)
 	} else {
 		var total int64 = 0
-		page = *cdata.NewDataPage(&total, items)
+		page = cdata.NewDataPage(&total, items)
 	}
 	return page, nil
 }
