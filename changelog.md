@@ -4,3 +4,8 @@
 
 ### Features
 * Moved some CRUD operations from IdentifiableMongoDbPersistence to MongoDbPersistence
+
+## <a name="1.0.3"></a> 1.0.3 (2020-08-04) 
+
+### Features
+*  Fix returns data in GetPageByFilter method
