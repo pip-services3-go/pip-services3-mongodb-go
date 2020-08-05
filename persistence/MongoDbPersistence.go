@@ -479,14 +479,14 @@ func (c *MongoDbPersistence) GetPageByFilter(correlationId string, filter interf
 		return page, ferr
 	}
 	for cursor.Next(c.Connection.Ctx) {
-		docPointer := c.GetProtoPtr()
+		docPointer := c.NewObjectByPrototype()
 		curErr := cursor.Decode(docPointer.Interface())
 		if curErr != nil {
 			continue
 		}
 		// item := docPointer.Elem().Interface()
 		// c.ConvertToPublic(&item)
-		item := c.GetConvResult(docPointer, c.Prototype)
+		item := c.ConvertResultToPublic(docPointer, c.Prototype)
 		items = append(items, item)
 	}
 	if items != nil {
@@ -534,7 +534,7 @@ func (c *MongoDbPersistence) GetListByFilter(correlationId string, filter interf
 	}
 
 	for cursor.Next(c.Connection.Ctx) {
-		docPointer := c.GetProtoPtr()
+		docPointer := c.NewObjectByPrototype()
 		curErr := cursor.Decode(docPointer.Interface())
 		if curErr != nil {
 			continue
@@ -542,7 +542,7 @@ func (c *MongoDbPersistence) GetListByFilter(correlationId string, filter interf
 
 		// item := docPointer.Elem().Interface()
 		// c.ConvertToPublic(&item)
-		item := c.GetConvResult(docPointer, c.Prototype)
+		item := c.ConvertResultToPublic(docPointer, c.Prototype)
 
 		items = append(items, item)
 	}
@@ -583,14 +583,14 @@ func (c *MongoDbPersistence) GetOneRandom(correlationId string, filter interface
 	if fndErr != nil {
 		return nil, fndErr
 	}
-	docPointer := c.GetProtoPtr()
+	docPointer := c.NewObjectByPrototype()
 	err = cursor.Decode(docPointer.Interface())
 	if err != nil {
 		return nil, err
 	}
 	// item = docPointer.Elem().Interface()
 	// c.ConvertToPublic(&item)
-	item = c.GetConvResult(docPointer, c.Prototype)
+	item = c.ConvertResultToPublic(docPointer, c.Prototype)
 	return item, nil
 }
 
@@ -646,13 +646,30 @@ func (c *MongoDbPersistence) DeleteByFilter(correlationId string, filter interfa
 	return nil
 }
 
+// GetCountByFilter is gets a count of data items retrieved by a given filter.
+// This method shall be called by a func (c *IdentifiableMongoDbPersistence) GetCountByFilter method from child type that
+// receives FilterParams and converts them into a filter function.
+// Parameters:
+// 	- correlationId  string
+//   (optional) transaction id to Trace execution through call chain.
+//  - filter interface{}
+// Returns count int, err error
+// a data count or error, if they are occured
+func (c *MongoDbPersistence) GetCountByFilter(correlationId string, filter interface{}) (count int64, err error) {
 
+	// Configure options
+	var options mngoptions.CountOptions
+	count = 0
+	count, err = c.Collection.CountDocuments(c.Connection.Ctx, filter, &options)
+	c.Logger.Trace(correlationId, "Find %d items in %s", count, c.CollectionName)
+	return count, err
+}
 
 
 
 
 // service function for return pointer on new prototype object for unmarshaling
-func (c *MongoDbPersistence) GetProtoPtr() reflect.Value {
+func (c *MongoDbPersistence) NewObjectByPrototype() reflect.Value {
 	proto := c.Prototype
 	if proto.Kind() == reflect.Ptr {
 		proto = proto.Elem()
@@ -660,7 +677,7 @@ func (c *MongoDbPersistence) GetProtoPtr() reflect.Value {
 	return reflect.New(proto)
 }
 
-func (c *MongoDbPersistence) GetConvResult(docPointer reflect.Value, proto reflect.Type) interface{} {
+func (c *MongoDbPersistence) ConvertResultToPublic(docPointer reflect.Value, proto reflect.Type) interface{} {
 	item := docPointer.Elem().Interface()
 	c.ConvertToPublic(&item)
 	if proto.Kind() == reflect.Ptr {

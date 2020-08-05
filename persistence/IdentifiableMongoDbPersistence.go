@@ -178,7 +178,7 @@ func (c *IdentifiableMongoDbPersistence) GetListByIds(correlationId string, ids 
 // - callback          callback function that receives data item or error.
 func (c *IdentifiableMongoDbPersistence) GetOneById(correlationId string, id interface{}) (item interface{}, err error) {
 	filter := bson.M{"_id": id}
-	docPointer := c.GetProtoPtr()
+	docPointer := c.NewObjectByPrototype()
 	foRes := c.Collection.FindOne(c.Connection.Ctx, filter)
 	ferr := foRes.Decode(docPointer.Interface())
 	if ferr != nil {
@@ -190,7 +190,7 @@ func (c *IdentifiableMongoDbPersistence) GetOneById(correlationId string, id int
 	c.Logger.Trace(correlationId, "Retrieved from %s by id = %s", c.CollectionName, id)
 	// item = docPointer.Elem().Interface()
 	// c.ConvertToPublic(&item)
-	item = c.GetConvResult(docPointer, c.Prototype)
+	item = c.ConvertResultToPublic(docPointer, c.Prototype)
 	return item, nil
 }
 
@@ -256,7 +256,7 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 		return nil, frRes.Err()
 	}
 	c.Logger.Trace(correlationId, "Set in %s with id = %s", c.CollectionName, id)
-	docPointer := c.GetProtoPtr()
+	docPointer := c.NewObjectByPrototype()
 	err = frRes.Decode(docPointer.Interface())
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -266,7 +266,7 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 	}
 	// item = docPointer.Elem().Interface()
 	// c.ConvertToPublic(&item)
-	item = c.GetConvResult(docPointer, c.Prototype)
+	item = c.ConvertResultToPublic(docPointer, c.Prototype)
 	return item, nil
 }
 
@@ -295,7 +295,7 @@ func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item inter
 		return nil, fuRes.Err()
 	}
 	c.Logger.Trace(correlationId, "Updated in %s with id = %s", c.CollectionName, id)
-	docPointer := c.GetProtoPtr()
+	docPointer := c.NewObjectByPrototype()
 	err = fuRes.Decode(docPointer.Interface())
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -305,7 +305,7 @@ func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item inter
 	}
 	// item = docPointer.Elem().Interface()
 	// c.ConvertToPublic(&item)
-	item = c.GetConvResult(docPointer, c.Prototype)
+	item = c.ConvertResultToPublic(docPointer, c.Prototype)
 	return item, nil
 }
 
@@ -337,7 +337,7 @@ func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, i
 		return nil, fuRes.Err()
 	}
 	c.Logger.Trace(correlationId, "Updated partially in %s with id = %s", c.Collection, id)
-	docPointer := c.GetProtoPtr()
+	docPointer := c.NewObjectByPrototype()
 	err = fuRes.Decode(docPointer.Interface())
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -347,7 +347,7 @@ func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, i
 	}
 	// item = docPointer.Elem().Interface()
 	// c.ConvertToPublic(&item)
-	item = c.GetConvResult(docPointer, c.Prototype)
+	item = c.ConvertResultToPublic(docPointer, c.Prototype)
 	return item, nil
 }
 
@@ -366,7 +366,7 @@ func (c *IdentifiableMongoDbPersistence) DeleteById(correlationId string, id int
 		return nil, fdRes.Err()
 	}
 	c.Logger.Trace(correlationId, "Deleted from %s with id = %s", c.CollectionName, id)
-	docPointer := c.GetProtoPtr()
+	docPointer := c.NewObjectByPrototype()
 	err = fdRes.Decode(docPointer.Interface())
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -376,7 +376,7 @@ func (c *IdentifiableMongoDbPersistence) DeleteById(correlationId string, id int
 	}
 	// item = docPointer.Elem().Interface()
 	// c.ConvertToPublic(&item)
-	item = c.GetConvResult(docPointer, c.Prototype)
+	item = c.ConvertResultToPublic(docPointer, c.Prototype)
 	return item, nil
 }
 
@@ -393,23 +393,4 @@ func (c *IdentifiableMongoDbPersistence) DeleteByIds(correlationId string, ids [
 		"_id": bson.M{"$in": ids},
 	}
 	return c.DeleteByFilter(correlationId, filter)
-}
-
-// GetCountByFilter is gets a count of data items retrieved by a given filter.
-// This method shall be called by a func (c *IdentifiableMongoDbPersistence) GetCountByFilter method from child type that
-// receives FilterParams and converts them into a filter function.
-// Parameters:
-// 	- correlationId  string
-//   (optional) transaction id to Trace execution through call chain.
-//  - filter interface{}
-// Returns count int, err error
-// a data count or error, if they are occured
-func (c *IdentifiableMongoDbPersistence) GetCountByFilter(correlationId string, filter interface{}) (count int64, err error) {
-
-	// Configure options
-	var options mngoptions.CountOptions
-	count = 0
-	count, err = c.Collection.CountDocuments(c.Connection.Ctx, filter, &options)
-	c.Logger.Trace(correlationId, "Find %d items in %s", count, c.CollectionName)
-	return count, err
 }
