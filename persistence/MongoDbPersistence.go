@@ -70,7 +70,7 @@ Configuration parameters:
 
     func (c * MyMongoDbPersistence) GetByName(correlationId string, name string) (item interface{}, err error) {
         filter := bson.M{"name": name}
-		docPointer := getProtoPtr(c.Prototype)
+		docPointer := NewObjectByPrototype(c.Prototype)
 		foRes := c.Collection.FindOne(context.TODO(), filter)
 		ferr := foRes.Decode(docPointer.Interface())
 		if ferr != nil {
@@ -100,7 +100,7 @@ Configuration parameters:
 		if frRes.Err() != nil {
 			return nil, frRes.Err()
 		}
-		docPointer := getProtoPtr(c.Prototype)
+		docPointer := NewObjectByPrototype(c.Prototype)
 		err = frRes.Decode(docPointer.Interface())
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
@@ -157,7 +157,7 @@ type MongoDbPersistence struct {
 	localConnection bool
 	indexes         []mongodrv.IndexModel
 	Prototype       reflect.Type
-	maxPageSize int32
+	maxPageSize     int32
 
 	// The dependency resolver.
 	DependencyResolver crefer.DependencyResolver
@@ -594,7 +594,6 @@ func (c *MongoDbPersistence) GetOneRandom(correlationId string, filter interface
 	return item, nil
 }
 
-
 // Create was creates a data item.
 // Parameters:
 // 	- correlation_id string
@@ -664,9 +663,6 @@ func (c *MongoDbPersistence) GetCountByFilter(correlationId string, filter inter
 	c.Logger.Trace(correlationId, "Find %d items in %s", count, c.CollectionName)
 	return count, err
 }
-
-
-
 
 // service function for return pointer on new prototype object for unmarshaling
 func (c *MongoDbPersistence) NewObjectByPrototype() reflect.Value {
