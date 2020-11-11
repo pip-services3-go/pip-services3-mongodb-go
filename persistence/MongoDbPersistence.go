@@ -160,7 +160,7 @@ type MongoDbPersistence struct {
 	maxPageSize     int32
 
 	PerformConvertFromPublic        func(interface{}) interface{}
-	PerformConvertToPublic          func(docPointer reflect.Value) interface{}
+	PerformConvertToPublic          func(interface{}) interface{}
 	PerformConvertFromPublicPartial func(interface{}) interface{}
 
 	// The dependency resolver.
@@ -287,28 +287,11 @@ func (c *MongoDbPersistence) EnsureIndex(keys interface{}, options *mongoopt.Ind
 // Parameters:
 // 	- item *interface{}
 // 	converted item
-// func (c *MongoDbPersistence) ConvertFromPublic(item *interface{}) {
-// 	var value interface{} = *item
-// 	if reflect.TypeOf(item).Kind() != reflect.Ptr {
-// 		panic("ConvertFromPublic:Error! Item is not a pointer!")
-// 	}
-
-// 	if reflect.TypeOf(value).Kind() == reflect.Map {
-// 		m, ok := value.(map[string]interface{})
-// 		if ok {
-// 			m["_id"] = m["Id"]
-// 			delete(m, "Id")
-// 			return
-// 		}
-// 	}
-
-// 	if reflect.TypeOf(value).Kind() == reflect.Struct {
-// 		return
-// 	}
-// 	panic("ConvertFromPublic:Error! Item must to be a map[string]interface{} or struct!")
-// }
-
 func (c *MongoDbPersistence) ConvertFromPublic(item interface{}) interface{} {
+
+	if item == nil {
+		return nil
+	}
 
 	var value interface{} = item
 	var t reflect.Type = reflect.TypeOf(item)
@@ -323,49 +306,34 @@ func (c *MongoDbPersistence) ConvertFromPublic(item interface{}) interface{} {
 		if ok {
 			m["_id"] = m["Id"]
 			delete(m, "Id")
-			return item
+
 		}
 	}
 
-	if t.Kind() == reflect.Struct {
-		return item
-	}
-	panic("ConvertFromPublic:Error! Item must to be a map[string]interface{} or struct!")
-
+	return item
 }
 
 // ConvertToPublic method is convert object (map) to public view by replaced "_id" to "Id" field
 // Parameters:
 // 	- item *interface{}
 // 	converted item
-// func (c *MongoDbPersistence) ConvertToPublic(item *interface{}) {
-// 	var value interface{} = *item
-// 	if reflect.TypeOf(item).Kind() != reflect.Ptr {
-// 		panic("ConvertToPublic:Error! Item is not a pointer!")
-// 	}
+func (c *MongoDbPersistence) ConvertToPublic(value interface{}) interface{} {
 
-// 	if reflect.TypeOf(value).Kind() == reflect.Map {
-// 		m, ok := value.(map[string]interface{})
-// 		if ok {
-// 			m["Id"] = m["_id"]
-// 			delete(m, "_id")
-// 			return
-// 		}
-// 	}
+	if value == nil {
+		return nil
+	}
 
-// 	if reflect.TypeOf(value).Kind() == reflect.Struct {
-// 		return
-// 	}
-// 	panic("ConvertToPublic:Error! Item must to be a map[string]interface{} or struct!")
-// }
-
-func (c *MongoDbPersistence) ConvertToPublic(docPointer reflect.Value) interface{} {
+	docPointer, ok := value.(reflect.Value)
+	if !ok {
+		if c.Prototype.Kind() == reflect.Ptr {
+			docPointer = reflect.New(c.Prototype.Elem())
+		} else {
+			docPointer = reflect.New(c.Prototype)
+		}
+		docPointer.Elem().Set(reflect.ValueOf(value))
+	}
 
 	item := docPointer.Elem().Interface()
-
-	if reflect.TypeOf(&item).Kind() != reflect.Ptr {
-		panic("ConvertToPublic:Error! Item is not a pointer!")
-	}
 
 	if reflect.TypeOf(item).Kind() == reflect.Map {
 		m, ok := item.(map[string]interface{})
@@ -374,20 +342,12 @@ func (c *MongoDbPersistence) ConvertToPublic(docPointer reflect.Value) interface
 			delete(m, "_id")
 		}
 
-		if c.Prototype.Kind() == reflect.Ptr {
-			return docPointer.Interface()
-		}
-		return item
 	}
 
-	if reflect.TypeOf(item).Kind() == reflect.Struct {
-		if c.Prototype.Kind() == reflect.Ptr {
-			return docPointer.Interface()
-		}
-		return item
+	if c.Prototype.Kind() == reflect.Ptr {
+		return docPointer.Interface()
 	}
-
-	panic("ConvertToPublic:Error! Item must to be a map[string]interface{} or struct!")
+	return item
 }
 
 // IsOpen method is checks if the component is opened.
@@ -549,7 +509,7 @@ func (c *MongoDbPersistence) GetPageByFilter(correlationId string, filter interf
 		if curErr != nil {
 			continue
 		}
-		//item := c.ConvertResultToPublic(docPointer, c.Prototype)
+
 		item := c.PerformConvertToPublic(docPointer)
 		items = append(items, item)
 	}
@@ -604,7 +564,6 @@ func (c *MongoDbPersistence) GetListByFilter(correlationId string, filter interf
 			continue
 		}
 
-		//item := c.ConvertResultToPublic(docPointer, c.Prototype)
 		item := c.PerformConvertToPublic(docPointer)
 		items = append(items, item)
 	}
@@ -650,7 +609,7 @@ func (c *MongoDbPersistence) GetOneRandom(correlationId string, filter interface
 	if err != nil {
 		return nil, err
 	}
-	//item = c.ConvertResultToPublic(docPointer, c.Prototype)
+
 	item = c.PerformConvertToPublic(docPointer)
 	return item, nil
 }
@@ -669,32 +628,14 @@ func (c *MongoDbPersistence) Create(correlationId string, item interface{}) (res
 	}
 	var newItem interface{}
 	newItem = cmpersist.CloneObject(item)
-	// Assign unique id if not exist
-	//c.PerformConvertFromPublic(&newItem)
 	newItem = c.PerformConvertFromPublic(newItem)
 	insRes, insErr := c.Collection.InsertOne(c.Connection.Ctx, newItem)
-	//c.ConvertToPublic(&newItem)
-
-	var newPtr reflect.Value
-	if c.Prototype.Kind() == reflect.Ptr {
-		newPtr = reflect.New(c.Prototype.Elem())
-	} else {
-		newPtr = reflect.New(c.Prototype)
-	}
-	newPtr.Elem().Set(reflect.ValueOf(newItem))
-
-	newItem = c.PerformConvertToPublic(newPtr)
+	newItem = c.PerformConvertToPublic(newItem)
 
 	if insErr != nil {
 		return nil, insErr
 	}
 	c.Logger.Trace(correlationId, "Created in %s with id = %s", c.Collection, insRes.InsertedID)
-
-	// if c.Prototype.Kind() == reflect.Ptr {
-	// 	newPtr := reflect.New(c.Prototype.Elem())
-	// 	newPtr.Elem().Set(reflect.ValueOf(newItem))
-	// 	return newPtr.Interface(), nil
-	// }
 	return newItem, nil
 }
 

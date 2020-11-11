@@ -187,7 +187,6 @@ func (c *IdentifiableMongoDbPersistence) GetOneById(correlationId string, id int
 	}
 	c.Logger.Trace(correlationId, "Retrieved from %s by id = %s", c.CollectionName, id)
 
-	//item = c.ConvertResultToPublic(docPointer, c.Prototype)
 	item = c.PerformConvertToPublic(docPointer)
 	return item, nil
 }
@@ -208,31 +207,15 @@ func (c *IdentifiableMongoDbPersistence) Create(correlationId string, item inter
 	newItem = cmpersist.CloneObject(item)
 	// Assign unique id if not exist
 	cmpersist.GenerateObjectId(&newItem)
-	//c.PerformConvertFromPublic(&newItem)
 	newItem = c.PerformConvertFromPublic(newItem)
 	insRes, insErr := c.Collection.InsertOne(c.Connection.Ctx, newItem)
-
-	//c.ConvertToPublic(&newItem)
-
-	var newPtr reflect.Value
-	if c.Prototype.Kind() == reflect.Ptr {
-		newPtr = reflect.New(c.Prototype.Elem())
-	} else {
-		newPtr = reflect.New(c.Prototype)
-	}
-	newPtr.Elem().Set(reflect.ValueOf(newItem))
-	newItem = c.PerformConvertToPublic(newPtr)
+	newItem = c.PerformConvertToPublic(newItem)
 
 	if insErr != nil {
 		return nil, insErr
 	}
 	c.Logger.Trace(correlationId, "Created in %s with id = %s", c.Collection, insRes.InsertedID)
 
-	// if c.Prototype.Kind() == reflect.Ptr {
-	// 	newPtr := reflect.New(c.Prototype.Elem())
-	// 	newPtr.Elem().Set(reflect.ValueOf(newItem))
-	// 	return newPtr.Interface(), nil
-	// }
 	return newItem, nil
 }
 
@@ -275,7 +258,6 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 		return nil, err
 	}
 
-	//item = c.ConvertResultToPublic(docPointer, c.Prototype)
 	item = c.PerformConvertToPublic(docPointer)
 	return item, nil
 }
@@ -314,7 +296,6 @@ func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item inter
 		return nil, err
 	}
 
-	//item = c.ConvertResultToPublic(docPointer, c.Prototype)
 	item = c.PerformConvertToPublic(docPointer)
 	return item, nil
 }
@@ -356,7 +337,6 @@ func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, i
 		return nil, err
 	}
 
-	//item = c.ConvertResultToPublic(docPointer, c.Prototype)
 	item = c.PerformConvertToPublic(docPointer)
 	return item, nil
 }
@@ -384,7 +364,7 @@ func (c *IdentifiableMongoDbPersistence) DeleteById(correlationId string, id int
 		}
 		return nil, err
 	}
-	//item = c.ConvertResultToPublic(docPointer, c.Prototype)
+
 	item = c.PerformConvertToPublic(docPointer)
 	return item, nil
 }
