@@ -187,7 +187,7 @@ func (c *IdentifiableMongoDbPersistence) GetOneById(correlationId string, id int
 	}
 	c.Logger.Trace(correlationId, "Retrieved from %s by id = %s", c.CollectionName, id)
 
-	item = c.PerformConvertToPublic(docPointer)
+	item = c.ConvertToPublic(docPointer)
 	return item, nil
 }
 
@@ -207,9 +207,9 @@ func (c *IdentifiableMongoDbPersistence) Create(correlationId string, item inter
 	newItem = cmpersist.CloneObject(item)
 	// Assign unique id if not exist
 	cmpersist.GenerateObjectId(&newItem)
-	newItem = c.PerformConvertFromPublic(newItem)
+	newItem = c.ConvertFromPublic(newItem)
 	insRes, insErr := c.Collection.InsertOne(c.Connection.Ctx, newItem)
-	newItem = c.PerformConvertToPublic(newItem)
+	newItem = c.ConvertToPublic(newItem)
 
 	if insErr != nil {
 		return nil, insErr
@@ -237,7 +237,7 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 	// Assign unique id if not exist
 	cmpersist.GenerateObjectId(&newItem)
 	id := cmpersist.GetObjectId(newItem)
-	c.PerformConvertFromPublic(&newItem)
+	c.ConvertFromPublic(&newItem)
 	filter := bson.M{"_id": id}
 	var options mngoptions.FindOneAndReplaceOptions
 	retDoc := mngoptions.After
@@ -258,7 +258,7 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 		return nil, err
 	}
 
-	item = c.PerformConvertToPublic(docPointer)
+	item = c.ConvertToPublic(docPointer)
 	return item, nil
 }
 
@@ -296,7 +296,7 @@ func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item inter
 		return nil, err
 	}
 
-	item = c.PerformConvertToPublic(docPointer)
+	item = c.ConvertToPublic(docPointer)
 	return item, nil
 }
 
@@ -337,7 +337,7 @@ func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, i
 		return nil, err
 	}
 
-	item = c.PerformConvertToPublic(docPointer)
+	item = c.ConvertToPublic(docPointer)
 	return item, nil
 }
 
@@ -365,7 +365,7 @@ func (c *IdentifiableMongoDbPersistence) DeleteById(correlationId string, id int
 		return nil, err
 	}
 
-	item = c.PerformConvertToPublic(docPointer)
+	item = c.ConvertToPublic(docPointer)
 	return item, nil
 }
 

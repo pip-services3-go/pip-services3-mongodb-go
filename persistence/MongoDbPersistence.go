@@ -159,9 +159,9 @@ type MongoDbPersistence struct {
 	Prototype       reflect.Type
 	maxPageSize     int32
 
-	PerformConvertFromPublic        func(interface{}) interface{}
-	PerformConvertToPublic          func(interface{}) interface{}
-	PerformConvertFromPublicPartial func(interface{}) interface{}
+	ConvertFromPublic        func(interface{}) interface{}
+	ConvertToPublic          func(interface{}) interface{}
+	ConvertFromPublicPartial func(interface{}) interface{}
 
 	// The dependency resolver.
 	DependencyResolver crefer.DependencyResolver
@@ -206,9 +206,9 @@ func NewMongoDbPersistence(proto reflect.Type, collection string) *MongoDbPersis
 	c.CollectionName = collection
 	c.indexes = make([]mongodrv.IndexModel, 0, 10)
 	c.config = *cconf.NewEmptyConfigParams()
-	c.PerformConvertFromPublic = c.ConvertFromPublic
-	c.PerformConvertToPublic = c.ConvertToPublic
-	c.PerformConvertFromPublicPartial = c.ConvertFromPublic
+	c.ConvertFromPublic = c.PerformConvertFromPublic
+	c.ConvertToPublic = c.PerformConvertToPublic
+	c.ConvertFromPublicPartial = c.PerformConvertFromPublic
 
 	c.Prototype = proto
 
@@ -287,7 +287,7 @@ func (c *MongoDbPersistence) EnsureIndex(keys interface{}, options *mongoopt.Ind
 // Parameters:
 // 	- item *interface{}
 // 	converted item
-func (c *MongoDbPersistence) ConvertFromPublic(item interface{}) interface{} {
+func (c *MongoDbPersistence) PerformConvertFromPublic(item interface{}) interface{} {
 
 	if item == nil {
 		return nil
@@ -317,7 +317,7 @@ func (c *MongoDbPersistence) ConvertFromPublic(item interface{}) interface{} {
 // Parameters:
 // 	- item *interface{}
 // 	converted item
-func (c *MongoDbPersistence) ConvertToPublic(value interface{}) interface{} {
+func (c *MongoDbPersistence) PerformConvertToPublic(value interface{}) interface{} {
 
 	if value == nil {
 		return nil
@@ -510,7 +510,7 @@ func (c *MongoDbPersistence) GetPageByFilter(correlationId string, filter interf
 			continue
 		}
 
-		item := c.PerformConvertToPublic(docPointer)
+		item := c.ConvertToPublic(docPointer)
 		items = append(items, item)
 	}
 	if items != nil {
@@ -564,7 +564,7 @@ func (c *MongoDbPersistence) GetListByFilter(correlationId string, filter interf
 			continue
 		}
 
-		item := c.PerformConvertToPublic(docPointer)
+		item := c.ConvertToPublic(docPointer)
 		items = append(items, item)
 	}
 
@@ -610,7 +610,7 @@ func (c *MongoDbPersistence) GetOneRandom(correlationId string, filter interface
 		return nil, err
 	}
 
-	item = c.PerformConvertToPublic(docPointer)
+	item = c.ConvertToPublic(docPointer)
 	return item, nil
 }
 
@@ -628,9 +628,9 @@ func (c *MongoDbPersistence) Create(correlationId string, item interface{}) (res
 	}
 	var newItem interface{}
 	newItem = cmpersist.CloneObject(item)
-	newItem = c.PerformConvertFromPublic(newItem)
+	newItem = c.ConvertFromPublic(newItem)
 	insRes, insErr := c.Collection.InsertOne(c.Connection.Ctx, newItem)
-	newItem = c.PerformConvertToPublic(newItem)
+	newItem = c.ConvertToPublic(newItem)
 
 	if insErr != nil {
 		return nil, insErr
