@@ -123,7 +123,6 @@ Example:
 
 type IdentifiableMongoDbPersistence struct {
 	MongoDbPersistence
-	
 }
 
 // NewIdentifiableMongoDbPersistence is creates a new instance of the persistence component.
@@ -153,7 +152,6 @@ func (c *IdentifiableMongoDbPersistence) Configure(config *cconf.ConfigParams) {
 	c.MongoDbPersistence.Configure(config)
 	c.maxPageSize = (int32)(config.GetAsIntegerWithDefault("options.max_page_size", (int)(c.maxPageSize)))
 }
-
 
 // GetListByIds is gets a list of data items retrieved by given unique ids.
 // Parameters:
@@ -188,9 +186,9 @@ func (c *IdentifiableMongoDbPersistence) GetOneById(correlationId string, id int
 		return nil, ferr
 	}
 	c.Logger.Trace(correlationId, "Retrieved from %s by id = %s", c.CollectionName, id)
-	// item = docPointer.Elem().Interface()
-	// c.ConvertToPublic(&item)
-	item = c.ConvertResultToPublic(docPointer, c.Prototype)
+
+	//item = c.ConvertResultToPublic(docPointer, c.Prototype)
+	item = c.PerformConvertToPublic(docPointer)
 	return item, nil
 }
 
@@ -210,19 +208,31 @@ func (c *IdentifiableMongoDbPersistence) Create(correlationId string, item inter
 	newItem = cmpersist.CloneObject(item)
 	// Assign unique id if not exist
 	cmpersist.GenerateObjectId(&newItem)
-	c.ConvertFromPublic(&newItem)
+	//c.PerformConvertFromPublic(&newItem)
+	newItem = c.PerformConvertFromPublic(newItem)
 	insRes, insErr := c.Collection.InsertOne(c.Connection.Ctx, newItem)
-	c.ConvertToPublic(&newItem)
+
+	//c.ConvertToPublic(&newItem)
+
+	var newPtr reflect.Value
+	if c.Prototype.Kind() == reflect.Ptr {
+		newPtr = reflect.New(c.Prototype.Elem())
+	} else {
+		newPtr = reflect.New(c.Prototype)
+	}
+	newPtr.Elem().Set(reflect.ValueOf(newItem))
+	newItem = c.PerformConvertToPublic(newPtr)
+
 	if insErr != nil {
 		return nil, insErr
 	}
 	c.Logger.Trace(correlationId, "Created in %s with id = %s", c.Collection, insRes.InsertedID)
 
-	if c.Prototype.Kind() == reflect.Ptr {
-		newPtr := reflect.New(c.Prototype.Elem())
-		newPtr.Elem().Set(reflect.ValueOf(newItem))
-		return newPtr.Interface(), nil
-	}
+	// if c.Prototype.Kind() == reflect.Ptr {
+	// 	newPtr := reflect.New(c.Prototype.Elem())
+	// 	newPtr.Elem().Set(reflect.ValueOf(newItem))
+	// 	return newPtr.Interface(), nil
+	// }
 	return newItem, nil
 }
 
@@ -244,7 +254,7 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 	// Assign unique id if not exist
 	cmpersist.GenerateObjectId(&newItem)
 	id := cmpersist.GetObjectId(newItem)
-	c.ConvertFromPublic(&newItem)
+	c.PerformConvertFromPublic(&newItem)
 	filter := bson.M{"_id": id}
 	var options mngoptions.FindOneAndReplaceOptions
 	retDoc := mngoptions.After
@@ -264,9 +274,9 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 		}
 		return nil, err
 	}
-	// item = docPointer.Elem().Interface()
-	// c.ConvertToPublic(&item)
-	item = c.ConvertResultToPublic(docPointer, c.Prototype)
+
+	//item = c.ConvertResultToPublic(docPointer, c.Prototype)
+	item = c.PerformConvertToPublic(docPointer)
 	return item, nil
 }
 
@@ -303,9 +313,9 @@ func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item inter
 		}
 		return nil, err
 	}
-	// item = docPointer.Elem().Interface()
-	// c.ConvertToPublic(&item)
-	item = c.ConvertResultToPublic(docPointer, c.Prototype)
+
+	//item = c.ConvertResultToPublic(docPointer, c.Prototype)
+	item = c.PerformConvertToPublic(docPointer)
 	return item, nil
 }
 
@@ -345,9 +355,9 @@ func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, i
 		}
 		return nil, err
 	}
-	// item = docPointer.Elem().Interface()
-	// c.ConvertToPublic(&item)
-	item = c.ConvertResultToPublic(docPointer, c.Prototype)
+
+	//item = c.ConvertResultToPublic(docPointer, c.Prototype)
+	item = c.PerformConvertToPublic(docPointer)
 	return item, nil
 }
 
@@ -374,12 +384,10 @@ func (c *IdentifiableMongoDbPersistence) DeleteById(correlationId string, id int
 		}
 		return nil, err
 	}
-	// item = docPointer.Elem().Interface()
-	// c.ConvertToPublic(&item)
-	item = c.ConvertResultToPublic(docPointer, c.Prototype)
+	//item = c.ConvertResultToPublic(docPointer, c.Prototype)
+	item = c.PerformConvertToPublic(docPointer)
 	return item, nil
 }
-
 
 // DeleteByIds is deletes multiple data items by their unique ids.
 // - correlationId string
