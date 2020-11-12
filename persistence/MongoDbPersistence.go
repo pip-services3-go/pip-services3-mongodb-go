@@ -686,12 +686,3 @@ func (c *MongoDbPersistence) NewObjectByPrototype() reflect.Value {
 	}
 	return reflect.New(proto)
 }
-
-// func (c *MongoDbPersistence) ConvertResultToPublic(docPointer reflect.Value, proto reflect.Type) interface{} {
-// 	item := docPointer.Elem().Interface()
-// 	c.ConvertToPublic(&item)
-// 	if proto.Kind() == reflect.Ptr {
-// 		return docPointer.Interface()
-// 	}
-// 	return item
-// }
