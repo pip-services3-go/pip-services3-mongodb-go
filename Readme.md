@@ -1,27 +1,57 @@
-# <img src="https://github.com/pip-services/pip-services/raw/master/design/Logo.png" alt="Pip.Services Logo" style="max-width:30%"> <br/> MongoDB persistence for Golang
+# <img src="https://uploads-ssl.webflow.com/5ea5d3315186cf5ec60c3ee4/5edf1c94ce4c859f2b188094_logo.svg" alt="Pip.Services Logo" width="200"> <br/> MongoDB components for Golang
 
-This framework is a part of the [Pip.Services](https://github.com/pip-services/pip-services) project.
-This package contains various design patterns for working with data and provides implementation of 
-reusable data processing and persistence components:
+This module is a part of the [Pip.Services](http://pipservices.org) polyglot microservices toolkit.
+
+The MongoDB module simplifies how we work with Mongo databases and contains everything you need to start working with MongoDB.
 Client was based on [official mongodb go driver](https://github.com/mongodb/mongo-go-driver)
 [Official docs](https://docs.mongodb.com/ecosystem/drivers/go/) for MongoDb Go driver
 
-- [DefaultMongoDbFactory](https://godoc.org/github.com/pip-services3-go/pip-services3-mongodb-go/build)
-- [MongoDbConnectionResolver](https://godoc.org/github.com/pip-services3-go/pip-services3-mongodb-go/connect)
-- [IdentifiableMongoDbPersistence](https://godoc.org/github.com/pip-services3-go/pip-services3-mongodb-go/persistence)
-- [MongoDbConnection](https://godoc.org/github.com/pip-services3-go/pip-services3-mongodb-go/persistence)
-- [MongoDbPersistence](https://godoc.org/github.com/pip-services3-go/pip-services3-mongodb-go/persistence)
+The module contains the following packages:
+- [**Build**](https://godoc.org/github.com/pip-services3-go/pip-services3-mongodb-go/build) - contains a factory for creating MongoDB persistence components.
+- [**Connect**](https://godoc.org/github.com/pip-services3-go/pip-services3-mongodb-go/connect) - instruments for configuring connections to the database. The component receives a set of configuration parameters and uses them to generate all necessary database connection parameters.
+- [**Persistence**](https://godoc.org/github.com/pip-services3-go/pip-services3-mongodb-go/persistence) - abstract classes for working with the database that can be used for connecting to collections and performing basic CRUD operations.
 
-Quick Links:
+<a name="links"></a> Quick links:
 
-* [Downloads](https://github.com/pip-services3-go/pip-services3-mongodb-go/blob/master/docs/Downloads.md)
-* [Development](https://github.com/pip-services3-go/pip-services3-mongodb-go/blob/master/docs/Development.md)
-* [Configuration](https://github.com/pip-services3-go/pip-services3-mongodb-go/blob/master/docs/Configuration.md)
+* [MongoDB persistence](https://www.pipservices.org/recipies/mongodb-persistence)
+* [Configuration](https://www.pipservices.org/recipies/configuration)
 * [API Reference](https://godoc.org/github.com/pip-services3-go/pip-services3-mongodb-go/)
-* [Building and Testing](https://github.com/pip-services3-go/pip-services3-mongodb-go/blob/master/docs/Development.md)
-* [Contributing](https://github.com/pip-services3-go/pip-services3-mongodb-go/blob/master/docs/Development.md#contrib)
+* [Change Log](CHANGELOG.md)
+* [Get Help](https://www.pipservices.org/community/help)
+* [Contribute](https://www.pipservices.org/community/contribute)
 
-## Acknowledgements
+## Use
+
+Get the package from the Github repository:
+```bash
+go get -u github.com/pip-services3-go/pip-services3-mongodb-go@latest
+```
+
+## Develop
+
+For development you shall install the following prerequisites:
+* Golang v1.12+
+* Visual Studio Code or another IDE of your choice
+* Docker
+* Git
+
+Run automated tests:
+```bash
+go test -v ./test/...
+```
+
+Generate API documentation:
+```bash
+./docgen.ps1
+```
+
+Before committing changes run dockerized test as:
+```bash
+./test.ps1
+./clear.ps1
+```
+
+## Contacts
 
 The Golang version of Pip.Services is created and maintained by:
 - **Levichev Dmitry**
