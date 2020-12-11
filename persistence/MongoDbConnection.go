@@ -23,34 +23,33 @@ you can reduce number of used database connections.
 
 Configuration parameters:
 
-- connection(s):
-  - discovery_key:             (optional) a key to retrieve the connection from IDiscovery
-  - host:                      host name or IP address
-  - port:                      port number (default: 27017)
-  - uri:                       resource URI or connection string with all parameters in it
-- credential(s):
-  - store_key:                 (optional) a key to retrieve the credentials from ICredentialStore
-  - username:                  (optional) user name
-  - password:                  (optional) user password
-- options:
-  - max_pool_size:             (optional) maximum connection pool size (default: 2)
-  - keep_alive:                (optional) enable connection keep alive in ms, if zero connection are keeped indefinitely (default: 0)
-  - connect_timeout:           (optional) connection timeout in milliseconds (default: 5000)
-  - socket_timeout:            (optional) socket timeout in milliseconds (default: 360000)
-  - auto_reconnect:            (optional) enable auto reconnection (default: true) (Not used)
-  - reconnect_interval:        (optional) reconnection interval in milliseconds (default: 1000) (Not used)
-  - max_page_size:             (optional) maximum page size (default: 100)
-  - replica_set:               (optional) name of replica set
-  - ssl:                       (optional) enable SSL connection (default: false) (Not release in this version)
-  - auth_source:               (optional) authentication source
-  - debug:                     (optional) enable debug output (default: false). (Not used)
+  - connection(s):
+    - discovery_key:             (optional) a key to retrieve the connection from IDiscovery
+    - host:                      host name or IP address
+    - port:                      port number (default: 27017)
+    - uri:                       resource URI or connection string with all parameters in it
+  - credential(s):
+    - store_key:                 (optional) a key to retrieve the credentials from ICredentialStore
+    - username:                  (optional) user name
+    - password:                  (optional) user password
+  - options:
+    - max_pool_size:             (optional) maximum connection pool size (default: 2)
+    - keep_alive:                (optional) enable connection keep alive in ms, if zero connection are keeped indefinitely (default: 0)
+    - connect_timeout:           (optional) connection timeout in milliseconds (default: 5000)
+    - socket_timeout:            (optional) socket timeout in milliseconds (default: 360000)
+    - auto_reconnect:            (optional) enable auto reconnection (default: true) (Not used)
+    - reconnect_interval:        (optional) reconnection interval in milliseconds (default: 1000) (Not used)
+    - max_page_size:             (optional) maximum page size (default: 100)
+    - replica_set:               (optional) name of replica set
+    - ssl:                       (optional) enable SSL connection (default: false) (Not release in this version)
+    - auth_source:               (optional) authentication source
+    - debug:                     (optional) enable debug output (default: false). (Not used)
 
 References:
 
 - *:logger:*:*:1.0           (optional) ILogger components to pass log messages
 - *:discovery:*:*:1.0        (optional) IDiscovery services
 - *:credential-store:*:*:1.0 (optional) Credential stores to resolve credentials
-
 */
 type MongoDbConnection struct {
 	defaultConfig *cconf.ConfigParams
@@ -91,7 +90,7 @@ func NewMongoDbConnection() (c *MongoDbConnection) {
 
 // Configure is configures component by passing configuration parameters.
 // Parameters:
-// 	- config  *cconf.ConfigParams
+//  - config  *cconf.ConfigParams
 //  configuration parameters to be set.
 func (c *MongoDbConnection) Configure(config *cconf.ConfigParams) {
 	config = config.SetDefaults(c.defaultConfig)
@@ -101,8 +100,8 @@ func (c *MongoDbConnection) Configure(config *cconf.ConfigParams) {
 
 // SetReferences are sets references to dependent components.
 // Parameters:
-// 	- references crefer.IReferences
-//	references to locate the component dependencies.
+//  - references crefer.IReferences
+//  references to locate the component dependencies.
 func (c *MongoDbConnection) SetReferences(references crefer.IReferences) {
 	c.Logger.SetReferences(references)
 	c.ConnectionResolver.SetReferences(references)
@@ -142,7 +141,7 @@ func (c *MongoDbConnection) composeSettings(settings *mongoclopt.ClientOptions) 
 	}
 
 	// TODO: Relase configure TLS(SSL) connection to MongoDB
-	//ssl := c.Options.GetAsNullableBoolean("ssl")
+	// ssl := c.Options.GetAsNullableBoolean("ssl")
 	// if ssl != nil {
 	// 	settings.ssl = ssl
 	// }
@@ -159,8 +158,8 @@ func (c *MongoDbConnection) composeSettings(settings *mongoclopt.ClientOptions) 
 
 // Open method is opens the component.
 // Parameters:
-// - correlationId string
-//	(optional) transaction id to trace execution through call chain.
+//   - correlationId string
+//   (optional) transaction id to trace execution through call chain.
 // Return error
 // error or nil when no errors occured.
 func (c *MongoDbConnection) Open(correlationId string) error {
@@ -201,8 +200,8 @@ func (c *MongoDbConnection) Open(correlationId string) error {
 
 // Close method is closes component and frees used resources.
 // Parameters:
-// 	- correlationId string
-// 	(optional) transaction id to trace execution through call chain.
+//  - correlationId string
+//  (optional) transaction id to trace execution through call chain.
 // Return error
 // error or nil when no errors occured.
 func (c *MongoDbConnection) Close(correlationId string) error {

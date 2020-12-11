@@ -26,29 +26,29 @@ import (
 
 Configuration parameters:
 
- - collection:                  (optional) MongoDB collection name
- - connection(s):
+  - collection:                  (optional) MongoDB collection name
+  - connection(s):
     - discovery_key:             (optional) a key to retrieve the connection from IDiscovery
-  	- host:                      host name or IP address
-	- port:                      port number (default: 27017)
-	- database:                  database name
-   	- uri:                       resource URI or connection string with all parameters in it
- - credential(s):
-   	- store_key:                 (optional) a key to retrieve the credentials from ICredentialStore
-   	- username:                  (optional) user name
-   	- password:                  (optional) user password
- - options:
-   	- max_pool_size:             (optional) maximum connection pool size (default: 2)
-   	- keep_alive:                (optional) enable connection keep alive (default: true)
-   	- connect_timeout:           (optional) connection timeout in milliseconds (default: 5000)
-   	- socket_timeout:            (optional) socket timeout in milliseconds (default: 360000)
-   	- auto_reconnect:            (optional) enable auto reconnection (default: true) (not used)
-   	- reconnect_interval:        (optional) reconnection interval in milliseconds (default: 1000) (not used)
-   	- max_page_size:             (optional) maximum page size (default: 100)
-   	- replica_set:               (optional) name of replica set
-   	- ssl:                       (optional) enable SSL connection (default: false) (not implements in this release)
-   	- auth_source:               (optional) authentication source
-   	- debug:                     (optional) enable debug output (default: false). (not used)
+    - host:                      host name or IP address
+    - port:                      port number (default: 27017)
+    - database:                  database name
+    - uri:                       resource URI or connection string with all parameters in it
+  - credential(s):
+    - store_key:                 (optional) a key to retrieve the credentials from ICredentialStore
+    - username:                  (optional) user name
+    - password:                  (optional) user password
+  - options:
+    - max_pool_size:             (optional) maximum connection pool size (default: 2)
+    - keep_alive:                (optional) enable connection keep alive (default: true)
+    - connect_timeout:           (optional) connection timeout in milliseconds (default: 5000)
+    - socket_timeout:            (optional) socket timeout in milliseconds (default: 360000)
+    - auto_reconnect:            (optional) enable auto reconnection (default: true) (not used)
+    - reconnect_interval:        (optional) reconnection interval in milliseconds (default: 1000) (not used)
+    - max_page_size:             (optional) maximum page size (default: 100)
+    - replica_set:               (optional) name of replica set
+    - ssl:                       (optional) enable SSL connection (default: false) (not implements in this release)
+    - auth_source:               (optional) authentication source
+    - debug:                     (optional) enable debug output (default: false). (not used)
 
  References:
 
@@ -56,98 +56,97 @@ Configuration parameters:
  - *:discovery:*:*:1.0        (optional) IDiscovery services
  - *:credential-store:*:*:1.0 (optional) Credential stores to resolve credentials
 
- Example:
+Example:
 
-	type MyMongoDbPersistence struct {
-		MongoDbPersistence
-	}
+  type MyMongoDbPersistence struct {
+    MongoDbPersistence
+  }
 
-    func NewMyMongoDbPersistence(proto reflect.Type, collection string) *MyMongoDbPersistence {
-		mc:= MyMongoDbPersistence{}
-		mc.MongoDbPersistence = NewMongoDbPersistence(proto, collection)
-		return &mc
+  func NewMyMongoDbPersistence(proto reflect.Type, collection string) *MyMongoDbPersistence {
+    mc:= MyMongoDbPersistence{}
+    mc.MongoDbPersistence = NewMongoDbPersistence(proto, collection)
+    return &mc
+  }
+
+  func (c * MyMongoDbPersistence) GetByName(correlationId string, name string) (item interface{}, err error) {
+    filter := bson.M{"name": name}
+    docPointer := NewObjectByPrototype(c.Prototype)
+    foRes := c.Collection.FindOne(context.TODO(), filter)
+    ferr := foRes.Decode(docPointer.Interface())
+    if ferr != nil {
+        if ferr == mongo.ErrNoDocuments {
+           return nil, nil
+        }
+        return nil, ferr
     }
-
-    func (c * MyMongoDbPersistence) GetByName(correlationId string, name string) (item interface{}, err error) {
-        filter := bson.M{"name": name}
-		docPointer := NewObjectByPrototype(c.Prototype)
-		foRes := c.Collection.FindOne(context.TODO(), filter)
-		ferr := foRes.Decode(docPointer.Interface())
-		if ferr != nil {
-			if ferr == mongo.ErrNoDocuments {
-				return nil, nil
-			}
-			return nil, ferr
-		}
-		item = docPointer.Elem().Interface()
-		c.ConvertToPublic(&item)
-		return item, nil
-       }
+    item = docPointer.Elem().Interface()
+    c.ConvertToPublic(&item)
+    return item, nil
+  }
 
     func (c * MyMongoDbPersistence) Set(correlatonId string, item MyData) (result interface{}, err error) {
-		newItem = cmpersist.CloneObject(item)
-		// Assign unique id if not exist
-		cmpersist.GenerateObjectId(&newItem)
-		id := cmpersist.GetObjectId(newItem)
-		c.ConvertFromPublic(&newItem)
-		filter := bson.M{"_id": id}
-		var options mngoptions.FindOneAndReplaceOptions
-		retDoc := mngoptions.After
-		options.ReturnDocument = &retDoc
-		upsert := true
-		options.Upsert = &upsert
-		frRes := c.Collection.FindOneAndReplace(context.TODO(), filter, newItem, &options)
-		if frRes.Err() != nil {
-			return nil, frRes.Err()
-		}
-		docPointer := NewObjectByPrototype(c.Prototype)
-		err = frRes.Decode(docPointer.Interface())
-		if err != nil {
-			if err == mongo.ErrNoDocuments {
-				return nil, nil
-			}
-			return nil, err
-		}
-		item = docPointer.Elem().Interface()
-		c.ConvertToPublic(&item)
-		return item, nil
+        newItem = cmpersist.CloneObject(item)
+        // Assign unique id if not exist
+        cmpersist.GenerateObjectId(&newItem)
+        id := cmpersist.GetObjectId(newItem)
+        c.ConvertFromPublic(&newItem)
+        filter := bson.M{"_id": id}
+        var options mngoptions.FindOneAndReplaceOptions
+        retDoc := mngoptions.After
+        options.ReturnDocument = &retDoc
+        upsert := true
+        options.Upsert = &upsert
+        frRes := c.Collection.FindOneAndReplace(context.TODO(), filter, newItem, &options)
+        if frRes.Err() != nil {
+            return nil, frRes.Err()
+        }
+        docPointer := NewObjectByPrototype(c.Prototype)
+        err = frRes.Decode(docPointer.Interface())
+        if err != nil {
+            if err == mongo.ErrNoDocuments {
+        	    return nil, nil
+            }
+            return nil, err
+        }
+        item = docPointer.Elem().Interface()
+        c.ConvertToPublic(&item)
+        return item, nil
     }
 
     persistence := NewMyMongoDbPersistence(reflect.TypeOf(MyData{}), "mycollection")
     persistence.Configure(NewConfigParamsFromTuples(
         "host", "localhost",
-		"port", "27017",
-		"database", "test",
+        "port", "27017",
+        "database", "test",
     ))
 
-	opnErr := persitence.Open("123")
-	if opnErr != nil {
-		...
-	}
+    opnErr := persitence.Open("123")
+    if opnErr != nil {
+        ...
+    }
 
-	resItem, setErr := persistence.Set("123", MyData{ name: "ABC" })
-	if setErr != nil {
-		...
-	}
+    resItem, setErr := persistence.Set("123", MyData{ name: "ABC" })
+    if setErr != nil {
+        ...
+    }
 
-	item, getErr := persistence.GetByName("123", "ABC")
-	if getErr != nil {
-		...
-	}
+    item, getErr := persistence.GetByName("123", "ABC")
+    if getErr != nil {
+        ...
+    }
     fmt.Println(item)                   // Result: { name: "ABC" }
     ("123", "ABC")
-	if getErr != nil {
-		...
-	}
+    if getErr != nil {
+        ...
+    }
     fmt.Println(item)                   // Result: { name: "ABC" }
 
     ("123", "ABC")
-	if getErr != nil {
-		...
-	}
+    if getErr != nil {
+        ...
+    }
     fmt.Println(item)                   // Result: { name: "ABC" }
 */
-
 type MongoDbPersistence struct {
 	defaultConfig cconf.ConfigParams
 
@@ -183,10 +182,10 @@ type MongoDbPersistence struct {
 
 // NewMongoDbPersistence are creates a new instance of the persistence component.
 // Parameters:
-//	- proto reflect.Type
-//	type of saved data, need for correct decode from DB
-// 	- collection  string
-//  a collection name.
+//   - proto reflect.Type
+//   type of saved data, need for correct decode from DB
+//   - collection  string
+//   a collection name.
 // Return *MongoDbPersistence
 // new created MongoDbPersistence component
 func NewMongoDbPersistence(proto reflect.Type, collection string) *MongoDbPersistence {
@@ -217,8 +216,8 @@ func NewMongoDbPersistence(proto reflect.Type, collection string) *MongoDbPersis
 
 // Configure method is configures component by passing configuration parameters.
 // Parameters:
-// 	- config  *cconf.ConfigParams
-//  configuration parameters to be set.
+//   - config  *cconf.ConfigParams
+//   configuration parameters to be set.
 func (c *MongoDbPersistence) Configure(config *cconf.ConfigParams) {
 	config = config.SetDefaults(&c.defaultConfig)
 	c.config = *config
@@ -228,8 +227,8 @@ func (c *MongoDbPersistence) Configure(config *cconf.ConfigParams) {
 
 // SetReferences method are sets references to dependent components.
 // Parameters:
-// 	- references crefer.IReferences
-//	references to locate the component dependencies.
+//   - references crefer.IReferences
+//   references to locate the component dependencies.
 func (c *MongoDbPersistence) SetReferences(references crefer.IReferences) {
 	c.references = references
 	c.Logger.SetReferences(references)
@@ -268,10 +267,10 @@ func (c *MongoDbPersistence) createConnection() *MongoDbConnection {
 
 // EnsureIndex method are adds index definition to create it on opening
 // Parameters:
-// 	- keys interface{}
-//	index keys (fields)
-//  - options *mongoopt.IndexOptions
-// 	index options
+//   - keys interface{}
+//   index keys (fields)
+//   - options *mongoopt.IndexOptions
+//   index options
 func (c *MongoDbPersistence) EnsureIndex(keys interface{}, options *mongoopt.IndexOptions) {
 	if keys == nil {
 		return
@@ -285,8 +284,8 @@ func (c *MongoDbPersistence) EnsureIndex(keys interface{}, options *mongoopt.Ind
 
 // ConvertFromPublic method help convert object (map) from public view by replaced "Id" to "_id" field
 // Parameters:
-// 	- item *interface{}
-// 	converted item
+//  - item *interface{}
+//  converted item
 func (c *MongoDbPersistence) PerformConvertFromPublic(item interface{}) interface{} {
 
 	if item == nil {
@@ -315,8 +314,8 @@ func (c *MongoDbPersistence) PerformConvertFromPublic(item interface{}) interfac
 
 // ConvertToPublic method is convert object (map) to public view by replaced "_id" to "Id" field
 // Parameters:
-// 	- item *interface{}
-// 	converted item
+//  - item *interface{}
+//  converted item
 func (c *MongoDbPersistence) PerformConvertToPublic(value interface{}) interface{} {
 
 	if value == nil {
@@ -358,8 +357,8 @@ func (c *MongoDbPersistence) IsOpen() bool {
 
 // Open method is opens the component.
 // Parameters:
-// 	- correlationId  string
-//	(optional) transaction id to trace execution through call chain.
+//   - correlationId  string
+//   (optional) transaction id to trace execution through call chain.
 // Return error
 // error or nil when no errors occured.
 func (c *MongoDbPersistence) Open(correlationId string) error {
@@ -414,8 +413,8 @@ func (c *MongoDbPersistence) Open(correlationId string) error {
 
 // Close methos closes component and frees used resources.
 // Parameters:
-// 	- correlationId string
-//	(optional) transaction id to trace execution through call chain.
+//   - correlationId string
+//   (optional) transaction id to trace execution through call chain.
 // Return error
 // error or nil when no errors occured.
 func (c *MongoDbPersistence) Close(correlationId string) error {
@@ -442,8 +441,8 @@ func (c *MongoDbPersistence) Close(correlationId string) error {
 
 // Clear method are clears component state.
 // Parameters:
-// 	- correlationId string
-// 	(optional) transaction id to trace execution through call chain.
+//  - correlationId string
+//  (optional) transaction id to trace execution through call chain.
 // Returns error
 // error or nil when no errors occured.
 func (c *MongoDbPersistence) Clear(correlationId string) error {
@@ -463,16 +462,16 @@ func (c *MongoDbPersistence) Clear(correlationId string) error {
 // This method shall be called by a func (c *IdentifiableMongoDbPersistence) GetPageByFilter method from child type that
 // receives FilterParams and converts them into a filter function.
 // Parameters:
-// 	- correlationId  string
-//   (optional) transaction id to Trace execution through call chain.
-//  - filter interface{}
-//  (optional) a filter JSON object
-//  - paging *cdata.PagingParams
-//  (optional) paging parameters
-//  - sort interface{}
-//  (optional) sorting BSON object
-//  - select  interface{}
-//  (optional) projection BSON object
+//   - correlationId  string
+//    (optional) transaction id to Trace execution through call chain.
+//   - filter interface{}
+//   (optional) a filter JSON object
+//   - paging *cdata.PagingParams
+//   (optional) paging parameters
+//   - sort interface{}
+//   (optional) sorting BSON object
+//   - select  interface{}
+//   (optional) projection BSON object
 // Returns page cdata.DataPage, err error
 // a data page or error, if they are occured
 func (c *MongoDbPersistence) GetPageByFilter(correlationId string, filter interface{}, paging *cdata.PagingParams,
@@ -530,14 +529,14 @@ func (c *MongoDbPersistence) GetPageByFilter(correlationId string, filter interf
 // This method shall be called by a func (c *IdentifiableMongoDbPersistence) GetListByFilter method from child type that
 // receives FilterParams and converts them into a filter function.
 // Parameters:
-// 	- correlationId	string
-// 	(optional) transaction id to Trace execution through call chain.
-// 	- filter interface{}
-//	(optional) a filter BSON object
-// 	- sort interface{}
-//	(optional) sorting BSON object
-// 	- select interface{}
-//	(optional) projection BSON object
+//   - correlationId string
+//   (optional) transaction id to Trace execution through call chain.
+//   - filter interface{}
+//   (optional) a filter BSON object
+//   - sort interface{}
+//   (optional) sorting BSON object
+//   - select interface{}
+//   (optional) projection BSON object
 // Returns items []interface{}, err error
 // data list and error, if they are ocurred
 func (c *MongoDbPersistence) GetListByFilter(correlationId string, filter interface{}, sort interface{}, sel interface{}) (items []interface{}, err error) {
@@ -578,10 +577,10 @@ func (c *MongoDbPersistence) GetListByFilter(correlationId string, filter interf
 // This method shall be called by a func (c *IdentifiableMongoDbPersistence) getOneRandom method from child class that
 // receives FilterParams and converts them into a filter function.
 // Parameters:
-// 	- correlationId string
-//	(optional) transaction id to Trace execution through call chain.
-// - filter interface{}
-// (optional) a filter BSON object
+//   - correlationId string
+//   (optional) transaction id to Trace execution through call chain.
+//   - filter interface{}
+//   (optional) a filter BSON object
 // Returns: item interface{}, err error
 // random item and error, if theq are occured
 func (c *MongoDbPersistence) GetOneRandom(correlationId string, filter interface{}) (item interface{}, err error) {
@@ -616,10 +615,10 @@ func (c *MongoDbPersistence) GetOneRandom(correlationId string, filter interface
 
 // Create was creates a data item.
 // Parameters:
-// 	- correlation_id string
-//	(optional) transaction id to Trace execution through call chain.
-// 	- item interface{}
-// an item to be created.
+//  - correlation_id string
+//  (optional) transaction id to Trace execution through call chain.
+//  - item interface{}
+//  an item to be created.
 // Returns result interface{}, err error
 // created item and error, if they are occured
 func (c *MongoDbPersistence) Create(correlationId string, item interface{}) (result interface{}, err error) {
@@ -643,10 +642,10 @@ func (c *MongoDbPersistence) Create(correlationId string, item interface{}) (res
 // This method shall be called by a func (c *IdentifiableMongoDbPersistence) deleteByFilter method from child class that
 // receives FilterParams and converts them into a filter function.
 // Parameters:
-// 	- correlationId  string
+//  - correlationId  string
 //  (optional) transaction id to Trace execution through call chain.
-// 	- filter  interface{}
-//	(optional) a filter BSON object.
+//  - filter  interface{}
+//  (optional) a filter BSON object.
 // Return error
 // error or nil for success.
 func (c *MongoDbPersistence) DeleteByFilter(correlationId string, filter interface{}) error {
@@ -663,8 +662,8 @@ func (c *MongoDbPersistence) DeleteByFilter(correlationId string, filter interfa
 // This method shall be called by a func (c *IdentifiableMongoDbPersistence) GetCountByFilter method from child type that
 // receives FilterParams and converts them into a filter function.
 // Parameters:
-// 	- correlationId  string
-//   (optional) transaction id to Trace execution through call chain.
+//  - correlationId  string
+//  (optional) transaction id to Trace execution through call chain.
 //  - filter interface{}
 // Returns count int, err error
 // a data count or error, if they are occured
