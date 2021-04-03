@@ -135,7 +135,6 @@ type IdentifiableMongoDbPersistence struct {
 func InheritIdentifiableMongoDbPersistence(overrides IMongoDbPersistenceOverrides, proto reflect.Type, collection string) *IdentifiableMongoDbPersistence {
 	if collection == "" {
 		panic("Collection name could not be nil")
-		return nil
 	}
 	c := IdentifiableMongoDbPersistence{}
 	c.MongoDbPersistence = *InheritMongoDbPersistence(overrides, proto, collection)

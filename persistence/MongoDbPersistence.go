@@ -406,6 +406,9 @@ func (c *MongoDbPersistence) Open(correlationId string) error {
 	//ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	//defer cancel()
 
+	// Define database schema
+	c.Overrides.DefineSchema()
+
 	// Recreate indexes
 	if len(c.indexes) > 0 {
 		keys, errIndexes := c.Collection.Indexes().CreateMany(c.Connection.Ctx, c.indexes, mongoopt.CreateIndexes())
