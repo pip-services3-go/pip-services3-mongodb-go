@@ -1,16 +1,15 @@
-package test_persistence
+package test_connect
 
 import (
 	cconf "github.com/pip-services3-go/pip-services3-commons-go/config"
-	mngpersist "github.com/pip-services3-go/pip-services3-mongodb-go/persistence"
+	conn "github.com/pip-services3-go/pip-services3-mongodb-go/connect"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 )
 
 func TestMongoDBConnection(t *testing.T) {
-
-	var connection mngpersist.MongoDbConnection
+	var connection conn.MongoDbConnection
 
 	mongoUri := os.Getenv("MONGO_URI")
 	mongoHost := os.Getenv("MONGO_HOST")
@@ -36,7 +35,7 @@ func TestMongoDBConnection(t *testing.T) {
 		"connection.database", mongoDatabase,
 	)
 
-	connection = *mngpersist.NewMongoDbConnection()
+	connection = *conn.NewMongoDbConnection()
 	connection.Configure(dbConfig)
 
 	connection.Open("")
