@@ -641,7 +641,7 @@ func (c *MongoDbPersistence) Create(correlationId string, item interface{}) (res
 		return nil, nil
 	}
 	var newItem interface{}
-	newItem = cmpersist.CloneObject(item)
+	newItem = cmpersist.CloneObject(item, c.Prototype)
 	newItem = c.Overrides.ConvertFromPublic(newItem)
 	insRes, insErr := c.Collection.InsertOne(c.Connection.Ctx, newItem)
 	newItem = c.Overrides.ConvertToPublic(newItem)

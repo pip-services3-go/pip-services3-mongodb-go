@@ -272,7 +272,7 @@ func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item inter
 	if item == nil { //|| item.id == nil
 		return nil, nil
 	}
-	newItem := cmpersist.CloneObject(item)
+	newItem := cmpersist.CloneObject(item, c.Prototype)
 	id := cmpersist.GetObjectId(newItem)
 	filter := bson.M{"_id": id}
 	update := bson.D{{"$set", newItem}}
