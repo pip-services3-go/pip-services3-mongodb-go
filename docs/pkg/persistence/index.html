@@ -966,7 +966,7 @@ func (c * MyMongoDbPersistence) GetByName(correlationId string, name string) (it
 }
 
   func (c * MyMongoDbPersistence) Set(correlatonId string, item MyData) (result interface{}, err error) {
-      newItem = cmpersist.CloneObject(item)
+      newItem = cmpersist.CloneObject(item, c.Prototype)
       // Assign unique id if not exist
       cmpersist.GenerateObjectId(&amp;newItem)
       id := cmpersist.GetObjectId(newItem)

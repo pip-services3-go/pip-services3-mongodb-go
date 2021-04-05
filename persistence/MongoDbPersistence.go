@@ -85,7 +85,7 @@ Example:
   }
 
     func (c * MyMongoDbPersistence) Set(correlatonId string, item MyData) (result interface{}, err error) {
-        newItem = cmpersist.CloneObject(item)
+        newItem = cmpersist.CloneObject(item, c.Prototype)
         // Assign unique id if not exist
         cmpersist.GenerateObjectId(&newItem)
         id := cmpersist.GetObjectId(newItem)
@@ -626,7 +626,7 @@ func (c *MongoDbPersistence) Create(correlationId string, item interface{}) (res
 		return nil, nil
 	}
 	var newItem interface{}
-	newItem = cmpersist.CloneObject(item)
+	newItem = cmpersist.CloneObject(item, c.Prototype)
 	newItem = c.ConvertFromPublic(newItem)
 	insRes, insErr := c.Collection.InsertOne(c.Connection.Ctx, newItem)
 	newItem = c.ConvertToPublic(newItem)

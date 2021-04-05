@@ -203,7 +203,7 @@ func (c *IdentifiableMongoDbPersistence) Create(correlationId string, item inter
 		return nil, nil
 	}
 	var newItem interface{}
-	newItem = cmpersist.CloneObject(item)
+	newItem = cmpersist.CloneObject(item, c.Prototype)
 	// Assign unique id if not exist
 	cmpersist.GenerateObjectId(&newItem)
 	newItem = c.ConvertFromPublic(newItem)
@@ -232,7 +232,7 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 		return nil, nil
 	}
 	var newItem interface{}
-	newItem = cmpersist.CloneObject(item)
+	newItem = cmpersist.CloneObject(item, c.Prototype)
 	// Assign unique id if not exist
 	cmpersist.GenerateObjectId(&newItem)
 	id := cmpersist.GetObjectId(newItem)
@@ -274,7 +274,7 @@ func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item inter
 		return nil, nil
 	}
 	var newItem interface{}
-	newItem = cmpersist.CloneObject(item)
+	newItem = cmpersist.CloneObject(item, c.Prototype)
 	id := cmpersist.GetObjectId(newItem)
 	filter := bson.M{"_id": id}
 	update := bson.D{{"$set", newItem}}
