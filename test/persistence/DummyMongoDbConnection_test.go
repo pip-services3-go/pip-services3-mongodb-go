@@ -1,18 +1,19 @@
 package test_persistence
 
 import (
-	cconf "github.com/pip-services3-go/pip-services3-commons-go/config"
-	cref "github.com/pip-services3-go/pip-services3-commons-go/refer"
-	mngpersist "github.com/pip-services3-go/pip-services3-mongodb-go/persistence"
 	"os"
 	"testing"
+
+	cconf "github.com/pip-services3-go/pip-services3-commons-go/config"
+	cref "github.com/pip-services3-go/pip-services3-commons-go/refer"
+	conn "github.com/pip-services3-go/pip-services3-mongodb-go/connect"
 )
 
 func TestDummyMongoDbConnection(t *testing.T) {
 
 	var persistence *DummyMongoDbPersistence
 	var fixture DummyPersistenceFixture
-	var connection *mngpersist.MongoDbConnection
+	var connection *conn.MongoDbConnection
 
 	mongoUri := os.Getenv("MONGO_URI")
 	mongoHost := os.Getenv("MONGO_HOST")
@@ -38,7 +39,7 @@ func TestDummyMongoDbConnection(t *testing.T) {
 		"connection.database", mongoDatabase,
 	)
 
-	connection = mngpersist.NewMongoDbConnection()
+	connection = conn.NewMongoDbConnection()
 	connection.Configure(dbConfig)
 
 	persistence = NewDummyMongoDbPersistence()

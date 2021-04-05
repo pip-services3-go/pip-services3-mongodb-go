@@ -64,7 +64,7 @@ Example:
 
   func NewMyMongoDbPersistence() {
     proto := reflect.TypeOf(MyData{})
-    return &DummyMongoDbPersistence{*mngpersist.NewIdentifiableMongoDbPersistence(proto, "mydata")}
+    return &DummyMongoDbPersistence{*persist.NewIdentifiableMongoDbPersistence(proto, "mydata")}
   }
 
   composeFilter(filter cdata.FilterParams) interface{} {
@@ -132,15 +132,14 @@ type IdentifiableMongoDbPersistence struct {
 //  (optional) a collection name.
 // Return *IdentifiableMongoDbPersistence
 // new created IdentifiableMongoDbPersistence component
-func NewIdentifiableMongoDbPersistence(proto reflect.Type, collection string) *IdentifiableMongoDbPersistence {
+func InheritIdentifiableMongoDbPersistence(overrides IMongoDbPersistenceOverrides, proto reflect.Type, collection string) *IdentifiableMongoDbPersistence {
 	if collection == "" {
 		panic("Collection name could not be nil")
-		return nil
 	}
-	imdbp := IdentifiableMongoDbPersistence{}
-	imdbp.MongoDbPersistence = *NewMongoDbPersistence(proto, collection)
-	imdbp.maxPageSize = 100
-	return &imdbp
+	c := IdentifiableMongoDbPersistence{}
+	c.MongoDbPersistence = *InheritMongoDbPersistence(overrides, proto, collection)
+	c.maxPageSize = 100
+	return &c
 }
 
 // Configure is configures component by passing configuration parameters.
@@ -186,7 +185,7 @@ func (c *IdentifiableMongoDbPersistence) GetOneById(correlationId string, id int
 	}
 	c.Logger.Trace(correlationId, "Retrieved from %s by id = %s", c.CollectionName, id)
 
-	item = c.ConvertToPublic(docPointer)
+	item = c.Overrides.ConvertToPublic(docPointer)
 	return item, nil
 }
 
@@ -206,9 +205,9 @@ func (c *IdentifiableMongoDbPersistence) Create(correlationId string, item inter
 	newItem = cmpersist.CloneObject(item, c.Prototype)
 	// Assign unique id if not exist
 	cmpersist.GenerateObjectId(&newItem)
-	newItem = c.ConvertFromPublic(newItem)
+	newItem = c.Overrides.ConvertFromPublic(newItem)
 	insRes, insErr := c.Collection.InsertOne(c.Connection.Ctx, newItem)
-	newItem = c.ConvertToPublic(newItem)
+	newItem = c.Overrides.ConvertToPublic(newItem)
 
 	if insErr != nil {
 		return nil, insErr
@@ -236,7 +235,7 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 	// Assign unique id if not exist
 	cmpersist.GenerateObjectId(&newItem)
 	id := cmpersist.GetObjectId(newItem)
-	c.ConvertFromPublic(&newItem)
+	c.Overrides.ConvertFromPublic(&newItem)
 	filter := bson.M{"_id": id}
 	var options mngoptions.FindOneAndReplaceOptions
 	retDoc := mngoptions.After
@@ -257,7 +256,7 @@ func (c *IdentifiableMongoDbPersistence) Set(correlationId string, item interfac
 		return nil, err
 	}
 
-	item = c.ConvertToPublic(docPointer)
+	item = c.Overrides.ConvertToPublic(docPointer)
 	return item, nil
 }
 
@@ -273,8 +272,7 @@ func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item inter
 	if item == nil { //|| item.id == nil
 		return nil, nil
 	}
-	var newItem interface{}
-	newItem = cmpersist.CloneObject(item, c.Prototype)
+	newItem := cmpersist.CloneObject(item)
 	id := cmpersist.GetObjectId(newItem)
 	filter := bson.M{"_id": id}
 	update := bson.D{{"$set", newItem}}
@@ -295,7 +293,7 @@ func (c *IdentifiableMongoDbPersistence) Update(correlationId string, item inter
 		return nil, err
 	}
 
-	item = c.ConvertToPublic(docPointer)
+	item = c.Overrides.ConvertToPublic(docPointer)
 	return item, nil
 }
 
@@ -336,7 +334,7 @@ func (c *IdentifiableMongoDbPersistence) UpdatePartially(correlationId string, i
 		return nil, err
 	}
 
-	item = c.ConvertToPublic(docPointer)
+	item = c.Overrides.ConvertToPublic(docPointer)
 	return item, nil
 }
 
@@ -364,7 +362,7 @@ func (c *IdentifiableMongoDbPersistence) DeleteById(correlationId string, id int
 		return nil, err
 	}
 
-	item = c.ConvertToPublic(docPointer)
+	item = c.Overrides.ConvertToPublic(docPointer)
 	return item, nil
 }
 

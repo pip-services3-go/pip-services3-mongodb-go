@@ -1,4 +1,4 @@
-package persistence
+package connect
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	cerror "github.com/pip-services3-go/pip-services3-commons-go/errors"
 	crefer "github.com/pip-services3-go/pip-services3-commons-go/refer"
 	clog "github.com/pip-services3-go/pip-services3-components-go/log"
-	mcon "github.com/pip-services3-go/pip-services3-mongodb-go/connect"
 	mongodrv "go.mongodb.org/mongo-driver/mongo"
 	mongoclopt "go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
@@ -57,7 +56,7 @@ type MongoDbConnection struct {
 	// The logger.
 	Logger *clog.CompositeLogger
 	//   The connection resolver.
-	ConnectionResolver *mcon.MongoDbConnectionResolver
+	ConnectionResolver *MongoDbConnectionResolver
 	//   The configuration options.
 	Options *cconf.ConfigParams
 	//   The MongoDB connection object.
@@ -70,8 +69,8 @@ type MongoDbConnection struct {
 
 // NewMongoDbConnection are creates a new instance of the connection component.
 // Returns *MongoDbConnection with default config
-func NewMongoDbConnection() (c *MongoDbConnection) {
-	mc := MongoDbConnection{
+func NewMongoDbConnection() *MongoDbConnection {
+	c := MongoDbConnection{
 		defaultConfig: cconf.NewConfigParamsFromTuples(
 			"options.max_pool_size", "2",
 			"options.keep_alive", "0",
@@ -81,11 +80,11 @@ func NewMongoDbConnection() (c *MongoDbConnection) {
 		//The logger.
 		Logger: clog.NewCompositeLogger(),
 		//The connection resolver.
-		ConnectionResolver: mcon.NewMongoDbConnectionResolver(),
+		ConnectionResolver: NewMongoDbConnectionResolver(),
 		// The configuration options.
 		Options: cconf.NewEmptyConfigParams(),
 	}
-	return &mc
+	return &c
 }
 
 // Configure is configures component by passing configuration parameters.
@@ -114,17 +113,13 @@ func (c *MongoDbConnection) IsOpen() bool {
 }
 
 func (c *MongoDbConnection) composeSettings(settings *mongoclopt.ClientOptions) {
-	var maxPoolSize uint64
-	maxPoolSize = (uint64)(c.Options.GetAsInteger("max_pool_size"))
-	var MaxConnIdleTime time.Duration
+	maxPoolSize := (uint64)(c.Options.GetAsInteger("max_pool_size"))
 	keepAlive := c.Options.GetAsInteger("keep_alive")
-	MaxConnIdleTime = (time.Duration)(keepAlive) * time.Millisecond
-	var ConnectTimeout time.Duration
+	MaxConnIdleTime := (time.Duration)(keepAlive) * time.Millisecond
 	connectTimeoutMS := c.Options.GetAsInteger("connect_timeout")
-	ConnectTimeout = (time.Duration)(connectTimeoutMS) * time.Millisecond
-	var SocketTimeout time.Duration
+	ConnectTimeout := (time.Duration)(connectTimeoutMS) * time.Millisecond
 	socketTimeoutMS := c.Options.GetAsInteger("socket_timeout")
-	SocketTimeout = (time.Duration)(socketTimeoutMS) * time.Millisecond
+	SocketTimeout := (time.Duration)(socketTimeoutMS) * time.Millisecond
 
 	replicaSet := c.Options.GetAsNullableString("replica_set")
 	authSource := c.Options.GetAsString("auth_source")
@@ -148,10 +143,11 @@ func (c *MongoDbConnection) composeSettings(settings *mongoclopt.ClientOptions) 
 
 	// Auth params
 	if authSource != "" && authUser != "" && authPassword != "" {
-		var authParams mongoclopt.Credential
-		authParams.AuthSource = authSource
-		authParams.Username = authUser
-		authParams.Password = authPassword
+		authParams := mongoclopt.Credential{
+			AuthSource: authSource,
+			Username:   authUser,
+			Password:   authPassword,
+		}
 		settings.SetAuth(authParams)
 	}
 }

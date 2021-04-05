@@ -4,19 +4,21 @@ import (
 	"reflect"
 
 	cdata "github.com/pip-services3-go/pip-services3-commons-go/data"
-	mngpersist "github.com/pip-services3-go/pip-services3-mongodb-go/persistence"
+	persist "github.com/pip-services3-go/pip-services3-mongodb-go/persistence"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 // extends IdentifiableMongoDbPersistence
 // implements IDummyPersistence
 type DummyMongoDbPersistence struct {
-	mngpersist.IdentifiableMongoDbPersistence
+	persist.IdentifiableMongoDbPersistence
 }
 
 func NewDummyMongoDbPersistence() *DummyMongoDbPersistence {
 	proto := reflect.TypeOf(Dummy{})
-	return &DummyMongoDbPersistence{*mngpersist.NewIdentifiableMongoDbPersistence(proto, "dummies")}
+	c := &DummyMongoDbPersistence{}
+	c.IdentifiableMongoDbPersistence = *persist.InheritIdentifiableMongoDbPersistence(c, proto, "dummies")
+	return c
 }
 
 func (c *DummyMongoDbPersistence) Create(correlationId string, item Dummy) (result Dummy, err error) {

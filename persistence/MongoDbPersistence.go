@@ -11,10 +11,18 @@ import (
 	crefer "github.com/pip-services3-go/pip-services3-commons-go/refer"
 	clog "github.com/pip-services3-go/pip-services3-components-go/log"
 	cmpersist "github.com/pip-services3-go/pip-services3-data-go/persistence"
+	conn "github.com/pip-services3-go/pip-services3-mongodb-go/connect"
 	mongodrv "go.mongodb.org/mongo-driver/mongo"
 	mngoptions "go.mongodb.org/mongo-driver/mongo/options"
 	mongoopt "go.mongodb.org/mongo-driver/mongo/options"
 )
+
+type IMongoDbPersistenceOverrides interface {
+	DefineSchema()
+	ConvertFromPublic(item interface{}) interface{}
+	ConvertFromPublicPartial(item interface{}) interface{}
+	ConvertToPublic(item interface{}) interface{}
+}
 
 /*
  MongoDbPersistence abstract persistence component that stores data in MongoDB using plain driver.
@@ -80,7 +88,7 @@ Example:
         return nil, ferr
     }
     item = docPointer.Elem().Interface()
-    c.ConvertToPublic(&item)
+    c.Overrides.ConvertToPublic(&item)
     return item, nil
   }
 
@@ -89,7 +97,7 @@ Example:
         // Assign unique id if not exist
         cmpersist.GenerateObjectId(&newItem)
         id := cmpersist.GetObjectId(newItem)
-        c.ConvertFromPublic(&newItem)
+        c.Overrides.ConvertFromPublic(&newItem)
         filter := bson.M{"_id": id}
         var options mngoptions.FindOneAndReplaceOptions
         retDoc := mngoptions.After
@@ -109,7 +117,7 @@ Example:
             return nil, err
         }
         item = docPointer.Elem().Interface()
-        c.ConvertToPublic(&item)
+        c.Overrides.ConvertToPublic(&item)
         return item, nil
     }
 
@@ -148,26 +156,23 @@ Example:
     fmt.Println(item)                   // Result: { name: "ABC" }
 */
 type MongoDbPersistence struct {
-	defaultConfig cconf.ConfigParams
+	Overrides IMongoDbPersistenceOverrides
+	Prototype reflect.Type
 
+	defaultConfig   cconf.ConfigParams
 	config          cconf.ConfigParams
 	references      crefer.IReferences
 	opened          bool
 	localConnection bool
 	indexes         []mongodrv.IndexModel
-	Prototype       reflect.Type
 	maxPageSize     int32
-
-	ConvertFromPublic        func(interface{}) interface{}
-	ConvertToPublic          func(interface{}) interface{}
-	ConvertFromPublicPartial func(interface{}) interface{}
 
 	// The dependency resolver.
 	DependencyResolver crefer.DependencyResolver
 	// The logger.
 	Logger clog.CompositeLogger
 	// The MongoDB connection component.
-	Connection *MongoDbConnection
+	Connection *conn.MongoDbConnection
 	// The MongoDB connection object.
 	Client *mongodrv.Client
 	// The MongoDB database name.
@@ -180,7 +185,7 @@ type MongoDbPersistence struct {
 	Collection *mongodrv.Collection
 }
 
-// NewMongoDbPersistence are creates a new instance of the persistence component.
+// InheritMongoDbPersistence are creates a new instance of the persistence component.
 // Parameters:
 //   - proto reflect.Type
 //   type of saved data, need for correct decode from DB
@@ -188,8 +193,11 @@ type MongoDbPersistence struct {
 //   a collection name.
 // Return *MongoDbPersistence
 // new created MongoDbPersistence component
-func NewMongoDbPersistence(proto reflect.Type, collection string) *MongoDbPersistence {
-	c := MongoDbPersistence{}
+func InheritMongoDbPersistence(overrides IMongoDbPersistenceOverrides, proto reflect.Type, collection string) *MongoDbPersistence {
+	c := MongoDbPersistence{
+		Overrides: overrides,
+		Prototype: proto,
+	}
 	c.defaultConfig = *cconf.NewConfigParamsFromTuples(
 		"collection", "",
 		"dependencies.connection", "*:connection:mongodb:*:1.0",
@@ -205,11 +213,6 @@ func NewMongoDbPersistence(proto reflect.Type, collection string) *MongoDbPersis
 	c.CollectionName = collection
 	c.indexes = make([]mongodrv.IndexModel, 0, 10)
 	c.config = *cconf.NewEmptyConfigParams()
-	c.ConvertFromPublic = c.PerformConvertFromPublic
-	c.ConvertToPublic = c.PerformConvertToPublic
-	c.ConvertFromPublicPartial = c.PerformConvertFromPublic
-
-	c.Prototype = proto
 
 	return &c
 }
@@ -235,8 +238,8 @@ func (c *MongoDbPersistence) SetReferences(references crefer.IReferences) {
 
 	// Get connection
 	c.DependencyResolver.SetReferences(references)
-	con, ok := c.DependencyResolver.GetOneOptional("connection").(*MongoDbConnection)
-	if ok {
+	con := c.DependencyResolver.GetOneOptional("connection").(*conn.MongoDbConnection)
+	if con != nil {
 		c.Connection = con
 	}
 	// Or create a local one
@@ -253,16 +256,19 @@ func (c *MongoDbPersistence) UnsetReferences() {
 	c.Connection = nil
 }
 
-func (c *MongoDbPersistence) createConnection() *MongoDbConnection {
-	connection := NewMongoDbConnection()
-
-	//if c.config != nil {
+func (c *MongoDbPersistence) createConnection() *conn.MongoDbConnection {
+	connection := conn.NewMongoDbConnection()
 	connection.Configure(&c.config)
-	//}
 	if c.references != nil {
 		connection.SetReferences(c.references)
 	}
 	return connection
+}
+
+// Defines schema for the collection.
+// This method shall be overloaded in child classes
+func (c *MongoDbPersistence) DefineSchema() {
+	// Overload this implementation in child classes
 }
 
 // EnsureIndex method are adds index definition to create it on opening
@@ -286,8 +292,7 @@ func (c *MongoDbPersistence) EnsureIndex(keys interface{}, options *mongoopt.Ind
 // Parameters:
 //  - item *interface{}
 //  converted item
-func (c *MongoDbPersistence) PerformConvertFromPublic(item interface{}) interface{} {
-
+func (c *MongoDbPersistence) ConvertFromPublic(item interface{}) interface{} {
 	if item == nil {
 		return nil
 	}
@@ -312,12 +317,19 @@ func (c *MongoDbPersistence) PerformConvertFromPublic(item interface{}) interfac
 	return item
 }
 
+// ConvertFromPublicPartial method help convert object (map) from public view by replaced "Id" to "_id" field
+// Parameters:
+//  - item *interface{}
+//  converted item
+func (c *MongoDbPersistence) ConvertFromPublicPartial(item interface{}) interface{} {
+	return c.ConvertFromPublic(item)
+}
+
 // ConvertToPublic method is convert object (map) to public view by replaced "_id" to "Id" field
 // Parameters:
 //  - item *interface{}
 //  converted item
-func (c *MongoDbPersistence) PerformConvertToPublic(value interface{}) interface{} {
-
+func (c *MongoDbPersistence) ConvertToPublic(value interface{}) interface{} {
 	if value == nil {
 		return nil
 	}
@@ -393,6 +405,9 @@ func (c *MongoDbPersistence) Open(correlationId string) error {
 	}
 	//ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	//defer cancel()
+
+	// Define database schema
+	c.Overrides.DefineSchema()
 
 	// Recreate indexes
 	if len(c.indexes) > 0 {
@@ -509,7 +524,7 @@ func (c *MongoDbPersistence) GetPageByFilter(correlationId string, filter interf
 			continue
 		}
 
-		item := c.ConvertToPublic(docPointer)
+		item := c.Overrides.ConvertToPublic(docPointer)
 		items = append(items, item)
 	}
 	if items != nil {
@@ -563,7 +578,7 @@ func (c *MongoDbPersistence) GetListByFilter(correlationId string, filter interf
 			continue
 		}
 
-		item := c.ConvertToPublic(docPointer)
+		item := c.Overrides.ConvertToPublic(docPointer)
 		items = append(items, item)
 	}
 
@@ -609,7 +624,7 @@ func (c *MongoDbPersistence) GetOneRandom(correlationId string, filter interface
 		return nil, err
 	}
 
-	item = c.ConvertToPublic(docPointer)
+	item = c.Overrides.ConvertToPublic(docPointer)
 	return item, nil
 }
 
@@ -626,10 +641,10 @@ func (c *MongoDbPersistence) Create(correlationId string, item interface{}) (res
 		return nil, nil
 	}
 	var newItem interface{}
-	newItem = cmpersist.CloneObject(item, c.Prototype)
-	newItem = c.ConvertFromPublic(newItem)
+	newItem = cmpersist.CloneObject(item)
+	newItem = c.Overrides.ConvertFromPublic(newItem)
 	insRes, insErr := c.Collection.InsertOne(c.Connection.Ctx, newItem)
-	newItem = c.ConvertToPublic(newItem)
+	newItem = c.Overrides.ConvertToPublic(newItem)
 
 	if insErr != nil {
 		return nil, insErr
