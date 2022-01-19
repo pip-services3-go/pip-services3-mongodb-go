@@ -571,6 +571,8 @@ func (c *MongoDbPersistence) GetListByFilter(correlationId string, filter interf
 		return nil, ferr
 	}
 
+	items = make([]interface{}, 0)
+
 	for cursor.Next(c.Connection.Ctx) {
 		docPointer := c.NewObjectByPrototype()
 		curErr := cursor.Decode(docPointer.Interface())
