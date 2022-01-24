@@ -617,10 +617,14 @@ func (c *MongoDbPersistence) GetOneRandom(correlationId string, filter interface
 	options.Skip = &itemNum
 	options.Limit = &itemLim
 	cursor, fndErr := c.Collection.Find(c.Connection.Ctx, filter, &options)
+	defer cursor.Close(c.Connection.Ctx)
+
 	if fndErr != nil {
 		return nil, fndErr
 	}
+
 	docPointer := c.NewObjectByPrototype()
+	cursor.Next(c.Connection.Ctx)
 	err = cursor.Decode(docPointer.Interface())
 	if err != nil {
 		return nil, err
