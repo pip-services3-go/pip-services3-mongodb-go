@@ -4,6 +4,7 @@
 ### Bug Fixes
 - Fixed MongoDbPersistence method in GetOneRandom.
 - Fixed database cursor closing after operations.
+- Fixed DefaultMongoDbFactory registration.
 
 ## <a name="1.1.1"></a> 1.1.1 (2022-01-19) 
 ### Bug Fixes

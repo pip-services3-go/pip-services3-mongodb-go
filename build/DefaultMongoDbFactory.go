@@ -20,6 +20,6 @@ func NewDefaultMongoDbFactory() *DefaultMongoDbFactory {
 
 	mongoDbConnectionDescriptor := cref.NewDescriptor("pip-services", "connection", "mongodb", "*", "1.0")
 
-	c.RegisterType(mongoDbConnectionDescriptor, persist.NewMongoDbConnection)
+	c.RegisterType(mongoDbConnectionDescriptor, conn.NewMongoDbConnection)
 	return &c
 }
