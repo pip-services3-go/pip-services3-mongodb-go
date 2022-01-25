@@ -511,6 +511,7 @@ func (c *MongoDbPersistence) GetPageByFilter(correlationId string, filter interf
 		options.Projection = sel
 	}
 	cursor, ferr := c.Collection.Find(c.Connection.Ctx, filter, &options)
+	defer cursor.Close(c.Connection.Ctx)
 	items := make([]interface{}, 0, 1)
 	if ferr != nil {
 		var total int64 = 0
@@ -567,6 +568,7 @@ func (c *MongoDbPersistence) GetListByFilter(correlationId string, filter interf
 	}
 
 	cursor, ferr := c.Collection.Find(c.Connection.Ctx, filter, &options)
+	defer cursor.Close(c.Connection.Ctx)
 	if ferr != nil {
 		return nil, ferr
 	}
