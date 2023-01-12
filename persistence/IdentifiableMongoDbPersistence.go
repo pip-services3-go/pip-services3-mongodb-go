@@ -68,7 +68,7 @@ Example:
   }
 
   composeFilter(filter cdata.FilterParams) interface{} {
-    if &filter == nil {
+    if filter == nil {
       filter = *cdata.NewEmptyFilterParams()
 	}
 

@@ -92,13 +92,13 @@ func (c *DummyMongoDbPersistence) DeleteByIds(correlationId string, ids []string
 
 func (c *DummyMongoDbPersistence) GetPageByFilter(correlationId string, filter *cdata.FilterParams, paging *cdata.PagingParams) (page *DummyPage, err error) {
 
-	if &filter == nil {
+	if filter == nil {
 		filter = cdata.NewEmptyFilterParams()
 	}
 
 	key := filter.GetAsNullableString("Key")
 	var filterObj bson.M
-	if *key != "" {
+	if key != nil && *key != "" {
 		filterObj = bson.M{"key": *key}
 	} else {
 		filterObj = bson.M{}
@@ -120,13 +120,13 @@ func (c *DummyMongoDbPersistence) GetPageByFilter(correlationId string, filter *
 
 func (c *DummyMongoDbPersistence) GetCountByFilter(correlationId string, filter *cdata.FilterParams) (count int64, err error) {
 
-	if &filter == nil {
+	if filter == nil {
 		filter = cdata.NewEmptyFilterParams()
 	}
 
 	key := filter.GetAsNullableString("Key")
 	var filterObj bson.M
-	if *key != "" {
+	if key != nil && *key != "" {
 		filterObj = bson.M{"key": *key}
 	} else {
 		filterObj = bson.M{}
